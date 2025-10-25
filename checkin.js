@@ -18,9 +18,10 @@ const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDR
 
 // --- 来自 all.txt (checkin 请求) [来源 2, 3] ---
 const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid'
-const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91";
-const USER_IP = "10.245.32.114"; // 似乎是硬编码
-const USER_MEAPIP = "198.18.129.164"; // 似乎是硬编码
+// 强制大写以匹配服务器校验
+const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91".toUpperCase(); 
+const USER_IP = "10.245.32.114"; // 强制硬编码以匹配抓包时 IP
+const USER_MEAPIP = "198.18.129.164"; // 强制硬编码以匹配抓包时 MEAP IP
 
 // --- (来自 checkin req body [来源 3]) ---
 const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)";
@@ -42,13 +43,13 @@ let alertTitle = "打卡失败";
 let alertMessage = "发生未知错误。";
 
 try {
-    // --- 1. 加载 Refresh Token ---
+    // --- 1. 加载 Refresh Token ---
     console.log("正在加载 Refresh Token...");
     let currentRefreshToken;
-    let tokenLoadedFromFile = false; // 标记是否从文件加载
+    let tokenLoadedFromFile = false; // 标记是否从文件加载
     if (fm.fileExists(tokenFilePath)) {
         currentRefreshToken = fm.readString(tokenFilePath);
-        tokenLoadedFromFile = true;
+        tokenLoadedFromFile = true;
         console.log("从文件加载 Token 成功。");
     } else {
         currentRefreshToken = INITIAL_REFRESH_TOKEN;
@@ -57,61 +58,56 @@ try {
 
     // --- 2. 执行 Token 刷新 (增加错误处理) ---
     console.log("正在刷新 Token...");
-    let authData;
-    try {
-        authData = await fetchNewTokens(currentRefreshToken);
-    } catch (e) {
-        // 检查是否是 URIError 并且 token 是从文件加载的
-        if (e.name === "URIError" && tokenLoadedFromFile) {
-            console.warn("文件中的 Token 似乎已损坏。正在删除并使用初始 Token 重试...");
-            // 删除损坏的文件
-            fm.remove(tokenFilePath); 
-            // 使用初始 Token 重试 
-            currentRefreshToken = INITIAL_REFRESH_TOKEN;
-            authData = await fetchNewTokens(currentRefreshToken);
-        } else {
-            // 重新抛出其他错误 (例如网络错误)
-            throw e; 
-        }
-    }
-    
-    // --- 3. 保存新的 Refresh Token ---
-    fm.writeString(tokenFilePath, authData.newRefreshToken);
-    console.log("新的 Refresh Token 已保存。");
+    let authData;
+    try {
+        authData = await fetchNewTokens(currentRefreshToken);
+    } catch (e) {
+        // 检查是否是 URIError 并且 token 是从文件加载的
+        if (e.name === "URIError" && tokenLoadedFromFile) {
+            console.warn("文件中的 Token 似乎已损坏。正在删除并使用初始 Token 重试...");
+            fm.remove(tokenFilePath); 
+            currentRefreshToken = INITIAL_REFRESH_TOKEN;
+            authData = await fetchNewTokens(currentRefreshToken);
+        } else {
+            throw e; 
+        }
+    }
+    
+    // --- 3. 保存新的 Refresh Token ---
+    fm.writeString(tokenFilePath, authData.newRefreshToken);
+    console.log("新的 Refresh Token 已保存。");
 
-    // --- 4. 获取动态数据 (GPS 和 WiFi) ---
+    // --- 4. 获取动态数据 (GPS 和 WiFi) ---
 	console.log("正在获取当前位置...");
     Location.setAccuracyToBest();
     const location = await Location.current();
     const locX = location.longitude.toString();
     const locY = location.latitude.toString();
     
-    // --- 步骤 4b: 设置 WiFi 详情 ---
+    // --- 步骤 4b: 设置 WiFi 详情 ---
     console.log("正在设置 WiFi 详情...");
-    // 关键修复: Scriptable 和快捷指令均无法访问 BSSID (MAC 地址)。
-    // 因此，我们使用抓包  中已知成功的硬编码值。
-    // 签到请求的重点是动态 GPS 坐标。
-    const wifiName = "Huawei-Employee"; // default
-    const wifiMac = "48:2c:d0:2a:6e:31"; // default
+    // 使用抓包时的硬编码值，绕过 Scriptable 的 API 限制和 BSSID 缺失问题。
+    const wifiName = "Huawei-Employee";
+    const wifiMac = "48:2c:d0:2a:6e:31"; 
 
-    // --- 5. 执行打卡 ---
-    console.log("正在发送打卡请求...");
-    const checkinResponse = await fetchCheckin(authData, { locX, locY, wifiName, wifiMac });
+    // --- 5. 执行打卡 ---
+    console.log("正在发送打卡请求...");
+    const checkinResponse = await fetchCheckin(authData, { locX, locY, wifiName, wifiMac });
 
-    // --- 6. 处理打卡响应 ---
-    console.log("收到打卡响应:");
-    console.log(checkinResponse);
-    if (checkinResponse.status === "1" && checkinResponse.msg === "打卡成功") {
-        alertTitle = "打卡成功";
-        alertMessage = `时间: ${checkinResponse.data.sysDate}\n地点: ${checkinResponse.data.location}`;
-    } else {
-        alertTitle = "打卡失败";
-        alertMessage = checkinResponse.msg || "服务器返回错误。";
-    }
+    // --- 6. 处理打卡响应 ---
+    console.log("收到打卡响应:");
+    console.log(checkinResponse);
+    if (checkinResponse.status === "1" && checkinResponse.msg === "打卡成功") {
+        alertTitle = "打卡成功";
+        alertMessage = `时间: ${checkinResponse.data.sysDate}\n地点: ${checkinResponse.data.location}`;
+    } else {
+        alertTitle = "打卡失败";
+        alertMessage = checkinResponse.msg || "服务器返回错误。";
+    }
 
 } catch (e) {
-    console.error(e);
-    alertMessage = e.toString();
+    console.error(e);
+    alertMessage = e.toString();
 }
 
 // --- 7. 显示最终结果 ---
@@ -130,16 +126,15 @@ Script.complete();
 
 /**
 * [步骤1] 刷新 Token
-* (基于 refresh.txt [来源 1, 2, 3])
-* * !! 已修复 - 增加 x-wlk-gray Cookie 捕获 !!
+* !! 最终修复 - 增加所有设备头部以完善会话状态 !!
 */
 async function fetchNewTokens(refreshToken) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg";
     let req = new Request(url);
     req.method = "POST";
     
-    // 设置 Headers [来源 1]
-    req.headers = {
+    // 确保 Refresh 请求头部信息完整，与 refresh.txt 严格一致
+    req.headers = {
         "lang": "zh",
         "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
         "nflag": "1",
@@ -157,12 +152,11 @@ async function fetchNewTokens(refreshToken) {
         "Content-Type": "application/x-www-form-urlencoded"
     };
     
-    // 设置 Body [来源 1]
     req.body = `refresh_token=${encodeURIComponent(refreshToken)}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
 
-    const responseBody = await req.loadJSON(); 
+    const responseBody = await req.loadJSON(); 
     
-    const cookies = req.response.cookies;
+    const cookies = req.response.cookies;
     if (!cookies || cookies.length === 0) {
         throw new Error("刷新失败：未在响应中找到 Cookies。");
     }
@@ -190,12 +184,7 @@ async function fetchNewTokens(refreshToken) {
 
 /**
 * [步骤2] 执行打卡
-* (基于 all.txt [来源 81, 82, 83])
-* * !! 已修复 - 修正 Cookie 格式并添加所有缺失的头部 !!
-*/
-/**
-* [步骤2] 执行打卡
-* !! 最终修复 - 确保 employeeNumber 强制大写，并移除不兼容的 Authorization 头部 !!
+* !! 最终修复 - 确保所有字段严格匹配抓包数据 !!
 */
 async function fetchCheckin(auth, dynamicData) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront";
@@ -205,14 +194,14 @@ async function fetchCheckin(auth, dynamicData) {
     // 1. 构建完整的 Cookie
     const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token}; x-wlk-gray=${auth.xwlkGray}`;
     
-    // 2. 设置 Headers (与 all.txt [cite: 102] 严格一致)
+    // 2. 设置 Headers (与 all.txt 严格一致)
     req.headers = {
         "lang": "zh",
         "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
         "Cookie": cookie,
-        "uuid": USER_DEVICE_ID, // 保持变量
+        "uuid": USER_DEVICE_ID,
         "Content-Type": "application/json",
-        "deviceType": "0", // 注意：请求头中是 "0"
+        "deviceType": "0", 
         "deviceName": "iPhone15,3",
         "X-Product-Type": "0",
         "appVersion": "7.50.10",
@@ -225,8 +214,7 @@ async function fetchCheckin(auth, dynamicData) {
     
     // 3. 设置 Body
     const body = {
-        // 强制转换为大写，与抓包数据  保持一致
-        "employeeNumber" : USER_EMPLOYEE_NUMBER.toUpperCase(), 
+        "employeeNumber" : USER_EMPLOYEE_NUMBER, // 已在配置区强制大写
         "x" : dynamicData.locX,
         "wifiList" : [
             {
@@ -234,15 +222,15 @@ async function fetchCheckin(auth, dynamicData) {
               "wifiName" : dynamicData.wifiName
             }
         ],
-        "meapip" : USER_MEAPIP,
+        "meapip" : USER_MEAPIP, // 硬编码
         "y" : dynamicData.locY,
         "province" : OFFICE_PROVINCE,
         "deviceId" : USER_DEVICE_ID,
         "locale" : "cn",
-        "deviceType" : "2", // 注意：请求体中是 "2"
+        "deviceType" : "2", 
         "verticalAccuracy" : "0",
         "location" : OFFICE_LOCATION,
-        "ip" : USER_IP,
+        "ip" : USER_IP, // 硬编码
         "city" : OFFICE_CITY,
         "country" : "中国"
     };
