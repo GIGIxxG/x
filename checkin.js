@@ -42,20 +42,38 @@ let alertTitle = "打卡失败";
 let alertMessage = "发生未知错误。";
 
 try {
-    // --- 1. 加载 Refresh Token ---
-	console.log("正在加载 Refresh Token...");
+	// --- 1. 加载 Refresh Token ---
+    console.log("正在加载 Refresh Token...");
     let currentRefreshToken;
+    let tokenLoadedFromFile = false; // 标记是否从文件加载
     if (fm.fileExists(tokenFilePath)) {
         currentRefreshToken = fm.readString(tokenFilePath);
+        tokenLoadedFromFile = true;
         console.log("从文件加载 Token 成功。");
     } else {
         currentRefreshToken = INITIAL_REFRESH_TOKEN;
         console.log("使用初始 Token。");
     }
 
-    // --- 2. 执行 Token 刷新 ---
+    // --- 2. 执行 Token 刷新 (增加错误处理) ---
     console.log("正在刷新 Token...");
-    const authData = await fetchNewTokens(currentRefreshToken);
+    let authData;
+    try {
+        authData = await fetchNewTokens(currentRefreshToken);
+    } catch (e) {
+        // 检查是否是 URIError 并且 token 是从文件加载的
+        if (e.name === "URIError" && tokenLoadedFromFile) {
+            console.warn("文件中的 Token 似乎已损坏。正在删除并使用初始 Token 重试...");
+            // 删除损坏的文件
+            fm.remove(tokenFilePath); 
+            // 使用初始 Token 重试 
+            currentRefreshToken = INITIAL_REFRESH_TOKEN;
+            authData = await fetchNewTokens(currentRefreshToken);
+        } else {
+            // 重新抛出其他错误 (例如网络错误)
+            throw e; 
+        }
+    }
     
     // --- 3. 保存新的 Refresh Token ---
     fm.writeString(tokenFilePath, authData.newRefreshToken);
