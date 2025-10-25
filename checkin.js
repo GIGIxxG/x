@@ -42,7 +42,7 @@ let alertTitle = "打卡失败";
 let alertMessage = "发生未知错误。";
 
 try {
-	// --- 1. 加载 Refresh Token ---
+    // --- 1. 加载 Refresh Token ---
     console.log("正在加载 Refresh Token...");
     let currentRefreshToken;
     let tokenLoadedFromFile = false; // 标记是否从文件加载
@@ -86,14 +86,13 @@ try {
     const locX = location.longitude.toString();
     const locY = location.latitude.toString();
     
-    // --- 修复 WiFi API 调用 ---
-    console.log("正在获取 WiFi 详情...");
-    // 1. 正确调用 Device.wifi() 函数，它返回一个对象或 undefined
-    const wifiInfo = Device.wifi(); 
-    
-    // 2. 检查 wifiInfo 是否存在。如果不存在 (如使用蜂窝网络)，则使用抓包的默认值 
-    const wifiName = (wifiInfo && wifiInfo.ssid) ? wifiInfo.ssid : "Huawei-Employee";
-    const wifiMac = (wifiInfo && wifiInfo.bssid) ? wifiInfo.bssid : "48:2c:d0:2a:6e:31";
+    // --- 步骤 4b: 设置 WiFi 详情 ---
+    console.log("正在设置 WiFi 详情...");
+    // 关键修复: Scriptable 和快捷指令均无法访问 BSSID (MAC 地址)。
+    // 因此，我们使用抓包  中已知成功的硬编码值。
+    // 签到请求的重点是动态 GPS 坐标。
+    const wifiName = "Huawei-Employee"; // default
+    const wifiMac = "48:2c:d0:2a:6e:31"; // default
 
     // --- 5. 执行打卡 ---
     console.log("正在发送打卡请求...");
