@@ -76,6 +76,7 @@ try {
     // --- 3. 保存新的 Refresh Token ---
     fm.writeString(tokenFilePath, authData.newRefreshToken);
     console.log("新的 Refresh Token 已保存。");
+    console.log(`[LOG] 成功获取的 Token 数据: token=...${authData.token.slice(-10)}, xwlkGray=${authData.xwlkGray}`); // 新增日志
 
     // --- 4. 获取动态数据 (GPS 和 WiFi) ---
 	console.log("正在获取当前位置...");
@@ -84,11 +85,16 @@ try {
     const locX = location.longitude.toString();
     const locY = location.latitude.toString();
     
+    // 新增日志
+    console.log(`[LOG] 动态 GPS 坐标: X=${locX}, Y=${locY}`); 
+
     // --- 步骤 4b: 设置 WiFi 详情 ---
     console.log("正在设置 WiFi 详情...");
-    // 使用抓包时的硬编码值，绕过 Scriptable 的 API 限制和 BSSID 缺失问题。
     const wifiName = "Huawei-Employee";
     const wifiMac = "48:2c:d0:2a:6e:31"; 
+
+    // 新增日志
+    console.log(`[LOG] 固化 WiFi/IP 数据: Name=${wifiName}, MAC=${wifiMac}, IP=${USER_IP}, MEAPIP=${USER_MEAPIP}`);
 
     // --- 5. 执行打卡 ---
     console.log("正在发送打卡请求...");
@@ -126,7 +132,7 @@ Script.complete();
 
 /**
 * [步骤1] 刷新 Token
-* !! 最终修复 - 增加所有设备头部以完善会话状态 !!
+* !! 包含详细日志输出 !!
 */
 async function fetchNewTokens(refreshToken) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg";
@@ -142,7 +148,7 @@ async function fetchNewTokens(refreshToken) {
         "deviceName": "iPhone15,3",
         "X-Product-Type": "0",
         "appVersion": "7.50.10",
-        "uuid": USER_DEVICE_ID, // 保持变量
+        "uuid": USER_DEVICE_ID,
         "osTarget": "1",
         "appName": "WeLink",
         "buildCode": "703",
@@ -153,6 +159,13 @@ async function fetchNewTokens(refreshToken) {
     };
     
     req.body = `refresh_token=${encodeURIComponent(refreshToken)}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
+
+    // 新增日志：打印 Token 刷新请求详情
+    console.log("\n--- [LOG: Token 刷新请求详情] ---");
+    console.log("URL:", url);
+    console.log("Headers:", JSON.stringify(req.headers, null, 2));
+    console.log("Body (部分):", req.body.slice(0, 100) + "..."); // 避免打印过长 Token
+    console.log("---------------------------------\n");
 
     const responseBody = await req.loadJSON(); 
     
@@ -184,7 +197,7 @@ async function fetchNewTokens(refreshToken) {
 
 /**
 * [步骤2] 执行打卡
-* !! 最终修复 - 确保所有字段严格匹配抓包数据 !!
+* !! 包含详细日志输出 !!
 */
 async function fetchCheckin(auth, dynamicData) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront";
@@ -235,6 +248,14 @@ async function fetchCheckin(auth, dynamicData) {
         "country" : "中国"
     };
     
+    // 新增日志：打印签到请求详情
+    console.log("\n--- [LOG: 打卡签到请求详情] ---");
+    console.log("URL:", url);
+    console.log("Headers:", JSON.stringify(req.headers, null, 2));
+    console.log("Cookie String:", cookie);
+    console.log("Body (JSON):", JSON.stringify(body, null, 2));
+    console.log("-----------------------------------\n");
+
     req.body = JSON.stringify(body);
     
     return await req.loadJSON();
