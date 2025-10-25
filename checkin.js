@@ -43,19 +43,19 @@ let alertMessage = "发生未知错误。";
 
 try {
     // --- 1. 加载 Refresh Token ---
-    console.log("正在加载 Refresh Token...");
-    let currentRefreshToken;
-    if (fm.fileExists(tokenFilePath)) {
-        currentRefreshToken = fm.readString(tokenFilePath);
-        console.log("从文件加载 Token 成功。");
-    } else {
-        currentRefreshToken = INITIAL_REFRESH_TOKEN;
-        console.log("使用初始 Token。");
-    }
+	console.log("正在加载 Refresh Token...");
+    let currentRefreshToken;
+    if (fm.fileExists(tokenFilePath)) {
+        currentRefreshToken = fm.readString(tokenFilePath);
+        console.log("从文件加载 Token 成功。");
+    } else {
+        currentRefreshToken = INITIAL_REFRESH_TOKEN;
+        console.log("使用初始 Token。");
+    }
 
-    // --- 2. 执行 Token 刷新 ---
-    console.log("正在刷新 Token...");
-    const authData = await fetchNewTokens(currentRefreshToken);
+    // --- 2. 执行 Token 刷新 ---
+    console.log("正在刷新 Token...");
+    const authData = await fetchNewTokens(currentRefreshToken);
     
     // --- 3. 保存新的 Refresh Token ---
     fm.writeString(tokenFilePath, authData.newRefreshToken);
