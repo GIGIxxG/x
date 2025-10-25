@@ -129,10 +129,10 @@ Script.complete();
 // ------------------------------------------------------------------
 
 /**
- * [步骤1] 刷新 Token
- * (基于 refresh.txt [来源 1, 2, 3])
- *  * !! 已修复错误并优化 Cookie 解析 !!
- */
+* [步骤1] 刷新 Token
+* (基于 refresh.txt [来源 1, 2, 3])
+* * !! 已修复 - 增加 x-wlk-gray Cookie 捕获 !!
+*/
 async function fetchNewTokens(refreshToken) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; // [cite: 1]
     let req = new Request(url);
@@ -148,87 +148,96 @@ async function fetchNewTokens(refreshToken) {
     // 设置 Body [来源 1]
     req.body = `refresh_token=${encodeURIComponent(refreshToken)}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
 
-    // --- 修复点 1 ---
-    // 发送请求并直接解析 JSON 响应
-    // req.loadJSON() 会自动处理 JSON.parse()
-    const responseBody = await req.loadJSON(); // 
+    const responseBody = await req.loadJSON(); 
     
-    // --- 修复点 2 (优化) ---
-    // 从 req.response.cookies 数组中安全地解析 Cookies 
     const cookies = req.response.cookies;
     if (!cookies || cookies.length === 0) {
-        throw new Error("刷新失败：未在响应中找到 Cookies。");
-    }
+        throw new Error("刷新失败：未在响应中找到 Cookies。");
+    }
 
-    // 将 cookie 数组转换为一个易于查找的 Map
-    const cookieMap = new Map();
-    for (const cookie of cookies) {
-        cookieMap.set(cookie.name, cookie.value);
-    }
-    
+    const cookieMap = new Map();
+    for (const cookie of cookies) {
+        cookieMap.set(cookie.name, cookie.value);
+    }
+    
     const token = cookieMap.get("token");
     const cdnToken = cookieMap.get("cdn_token");
     const hwafSESID = cookieMap.get("HWWAFSESID");
     const hwafSESTIME = cookieMap.get("HWWAFSESTIME");
+    // --- 新增修复 ---
+    // 从 refresh 响应中捕获 x-wlk-gray cookie 
+    const xwlkGray = cookieMap.get("x-wlk-gray"); 
     
-    // 从 Body 中解析新的 refresh_token
     const newRefreshToken = responseBody.refresh_token;
 
-    if (!token || !cdnToken || !hwafSESID || !hwafSESTIME || !newRefreshToken) {
+    // --- 新增修复 ---
+    // 确保 xwlkGray 也被正确捕获
+    if (!token || !cdnToken || !hwafSESID || !hwafSESTIME || !newRefreshToken || xwlkGray === undefined) {
         console.error("Cookie 或 Token 解析不完整:", cookieMap, responseBody);
         throw new Error("Token 刷新失败: " + (responseBody.msg || "无法解析所有必需的 Cookie 或 refresh_token"));
     }
     
-    return { token, cdnToken, hwafSESID, hwafSESTIME, newRefreshToken };
+    // --- 新增修复 ---
+    // 返回 xwlkGray
+    return { token, cdnToken, hwafSESID, hwafSESTIME, newRefreshToken, xwlkGray };
 }
 
 /**
- * [步骤2] 执行打卡
- * (基于 all.txt [来源 1, 2, 3, 4, 5])
- */
+* [步骤2] 执行打卡
+* (基于 all.txt [来源 81, 82, 83])
+* * !! 已修复 - 修正 Cookie 格式并添加所有缺失的头部 !!
+*/
 async function fetchCheckin(auth, dynamicData) {
-    const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [来源 1]
-    let req = new Request(url);
-    req.method = "POST";
-    
-    // 构建完整的 Cookie
-    const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token}`;
-    
-    // 设置 Headers [来源 1, 2]
-    req.headers = {
-        "lang": "zh",
-        "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
-        "Cookie": cookie,
-        "x-wlk-gray": "0",
-        "uuid": USER_DEVICE_ID,
-        "Content-Type": "application/json" // [来源 2]
-        // 其他 headers 似乎不是严格必需的
-    };
-    
-    // 设置 Body [来源 3]
-    const body = {
-        "employeeNumber" : USER_EMPLOYEE_NUMBER,
-        "x" : dynamicData.locX, // 动态
-        "wifiList" : [
-            {
-              "wifiMac" : dynamicData.wifiMac, // 动态
-              "wifiName" : dynamicData.wifiName // 动态
-            }
-        ],
-        "meapip" : USER_MEAPIP,
-        "y" : dynamicData.locY, // 动态
-        "province" : OFFICE_PROVINCE,
-        "deviceId" : USER_DEVICE_ID,
-        "locale" : "cn",
-        "deviceType" : "2",
-        "verticalAccuracy" : "0",
-        "location" : OFFICE_LOCATION,
-        "ip" : USER_IP,
-        "city" : OFFICE_CITY,
-        "country" : "中国"
-    };
-    
-    req.body = JSON.stringify(body);
-    
-    return await req.loadJSON(); // [来源 4, 5]
+    const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [cite: 81]
+    let req = new Request(url);
+    req.method = "POST";
+    
+    // --- 修复 1: 构建与 all.txt 一致的完整 Cookie  ---
+    // 将 x-wlk-gray 包含在 Cookie 字符串中
+    const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token}; x-wlk-gray=${auth.xwlkGray}`;
+    
+    // --- 修复 2: 添加 all.txt 中所有缺失的头部  ---
+    req.headers = {
+        "lang": "zh", // [cite: 81]
+        "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)", // [cite: 81]
+        "Cookie": cookie, // 
+        "uuid": USER_DEVICE_ID, // [cite: 81]
+        "Content-Type": "application/json", // 
+        "deviceType": "0", // [cite: 81]
+        "deviceName": "iPhone15,3", // [cite: 81]
+        "X-Product-Type": "0", // [cite: 81]
+        "appVersion": "7.50.10", // [cite: 81]
+        "osTarget": "1", // [cite: 81]
+        "appName": "WeLink", // [cite: 81]
+        "buildCode": "703", // [cite: 81]
+        "X-Cloud-Type": "1", // [cite: 81]
+        "businessVersionCode": "703" // [cite: 81]
+    };
+    
+    // 设置 Body (这部分之前是正确的) [cite: 82, 83]
+    const body = {
+        "employeeNumber" : USER_EMPLOYEE_NUMBER, // 
+        "x" : dynamicData.locX, // 动态
+        "wifiList" : [ // 
+            {
+              "wifiMac" : dynamicData.wifiMac, // 动态 (使用硬编码)
+              "wifiName" : dynamicData.wifiName // 动态 (使用硬编码)
+            }
+        ],
+        "meapip" : USER_MEAPIP, // 
+        "y" : dynamicData.locY, // 动态
+        "province" : OFFICE_PROVINCE, // 
+        "deviceId" : USER_DEVICE_ID, // 
+        "locale" : "cn", // 
+        "deviceType" : "2", // 
+        "verticalAccuracy" : "0", // 
+        "location" : OFFICE_LOCATION, // 
+        "ip" : USER_IP, // 
+        "city" : OFFICE_CITY, // 
+        "country" : "中国" // [cite: 83]
+    };
+    
+    req.body = JSON.stringify(body);
+    
+    return await req.loadJSON(); // [cite: 84]
 }
