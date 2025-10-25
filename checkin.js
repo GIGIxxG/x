@@ -1,223 +1,139 @@
-// WeLinkAutoCheckin.js
-// 在 Scriptable 中运行
+// Scriptable 脚本 for WeLink Check-in
+//
+// ------------------------------------------------------------------
+// ⚠️ --- (1) 用户配置 --- ⚠️
+// 您必须用您自己的信息更新以下值。
+// 这些值来自您提供的 all.txt 日志文件。
+// ------------------------------------------------------------------
 
-class WeLinkAutoCheckin {
-  constructor() {
-    this.baseURL = "https://api.welink.huaweicloud.com"
-    this.deviceId = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"
-  }
-  
-  // 登录获取 token
-  async login() {
-    const loginURL = `${this.baseURL}/mcloud/mag/ProxyForText/weaccess/strategy/api/v3/login`
+// --- (来自 login response headers [来源 7]) ---
+// 这是您刚抓取到的新 Token，有效期 2 小时
+const USER_TOKEN = "bj202841-e0d8-b0c8-e61a-a16be6dca37e"; 
+
+// --- (来自 login response headers [来源 7]) ---
+// cdn_token 似乎也需要
+const CDN_TOKEN = "967C2F6B3FCB4B58BF8727151CF94B98#1761415563#94d2f59056699f8d6acc0c66f0acaab1a539864166147e13d4d4ba21b11e223c";
+
+// --- (来自 checkin request headers [来源 1, 2]) ---
+const USER_TRACE_ID = "WK-00EF757D-1FDC-4D50-B087-2A445E2E7403";
+const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 也是 'uuid'
+const HWWAFSESID_COOKIE = "HWWAFSESID=eb4f23496b49710e66b"; // (来自 checkin req [来源 1])
+const HWWAFSESTIME_COOKIE = "HWWAFSESTIME=1761359423922"; // (来自 checkin req [来源 1])
+
+// --- (来自 checkin request body [来源 3]) ---
+const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91";
+const USER_IP = "10.245.32.114";
+const USER_MEAPIP = "198.18.129.164";
+
+// --- (来自 checkin request body [来源 3]) ---
+// 服务器很可能需要验证您是否在 *这个特定的* 办公地点。
+const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)";
+const OFFICE_CITY = "苏州市";
+const OFFICE_PROVINCE = "江苏省";
+const OFFICE_COUNTRY = "中国";
+
+
+// ------------------------------------------------------------------
+// (2) 脚本逻辑 (通常不需要修改)
+// ------------------------------------------------------------------
+
+let alertTitle = "打卡失败";
+let alertMessage = "发生未知错误。";
+
+try {
+    // --- 1. 获取动态数据 (GPS 和 WiFi) ---
+    console.log("正在获取当前位置...");
+    // 请求高精度位置
+    Location.setAccuracyToBest();
+    const location = await Location.current();
+    const locX = location.longitude.toString(); // 经度
+    const locY = location.latitude.toString(); // 纬度
     
-    const loginBody = {
-      "os_ver": "26.0.1",
-      "lang": "en", 
-      "device_id": this.deviceId,
-      "client_policy_ver": 39,
-      "app_key": "com.huawei.mobile.weaccess",
-      "os_type": "iOS",
-      "app_sec": "593fc2b133794427baffd11b0456dbb9",
-      "sdk_ver": "1.0.0001"
+    console.log("正在获取 WiFi 详情...");
+    const wifiName = Device.wifi.ssid() || "Huawei-Employee"; // 默认值
+    const wifiMac = Device.wifi.bssid() || "48:2c:d0:2a:6e:31"; // 默认值
+
+    // --- 2. 构建请求 ---
+    const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [来源 1]
+    let req = new Request(url);
+    req.method = "POST";
+
+    // --- 3. 设置 Headers (来自 checkin req [来源 1, 2]) ---
+    
+    // 构建完整的 Cookie
+    const cookie = `${HWWAFSESID_COOKIE}; ${HWWAFSESTIME_COOKIE}; cdn_token=${CDN_TOKEN}; token=${USER_TOKEN}`;
+    
+    req.headers = {
+        "lang": "zh",
+        "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
+        "traceId": USER_TRACE_ID,
+        "Cookie": cookie,
+        "x-wlk-gray": "0",
+        "deviceType": "0",
+        "deviceName": "iPhone15,3",
+        "X-Product-Type": "0",
+        "appVersion": "7.50.10",
+        "uuid": USER_DEVICE_ID,
+        "osTarget": "1",
+        "appName": "WeLink",
+        "buildCode": "703",
+        "Accept-Language": "en-US;q=1, zh-Hans-US;q=0.9",
+        "X-Cloud-Type": "1",
+        "businessVersionCode": "703",
+        "Accept": "*/*",
+        "Content-Type": "application/json"
+    };
+    
+    // --- 4. 设置 Body (来自 checkin req [来源 3]) ---
+    const body = {
+        "employeeNumber" : USER_EMPLOYEE_NUMBER,
+        "x" : locX, // 使用动态获取的经度
+        "wifiList" : [
+            {
+              "wifiMac" : wifiMac, // 使用动态获取的 WiFi BSSID
+              "wifiName" : wifiName // 使用动态获取的 WiFi SSID
+            }
+        ],
+        "meapip" : USER_MEAPIP,
+        "y" : locY, // 使用动态获取的纬度
+        "province" : OFFICE_PROVINCE,
+        "deviceId" : USER_DEVICE_ID,
+        "locale" : "cn",
+        "deviceType" : "2",
+        "verticalAccuracy" : "0", // 似乎是硬编码的
+        "location" : OFFICE_LOCATION,
+        "ip" : USER_IP, // 似乎是硬编码的
+        "city" : OFFICE_CITY,
+        "country" : OFFICE_COUNTRY
+    };
+    
+    req.body = JSON.stringify(body);
+    
+    // --- 5. 发送请求 ---
+    console.log("正在发送打卡请求...");
+    const response = await req.loadJSON();
+    console.log("收到响应:");
+    console.log(response);
+
+    // --- 6. 处理响应 (基于 checkin resp [来源 4]) ---
+    if (response.status === "1" && response.msg === "打卡成功") {
+        alertTitle = "打卡成功";
+        alertMessage = `时间: ${response.data.sysDate}\n地点: ${response.data.location}`;
+    } else {
+        alertTitle = "打卡失败";
+        alertMessage = response.msg || "服务器返回错误。";
     }
     
-    const loginHeaders = {
-      "Content-Type": "application/json",
-      "X-Weaccess-Trace-ID": this.generateUUID(),
-      "X-Weaccess-Authorization": "bj750fec-bdb5-5c7d-bdac-9ea73ac6836e",
-      "X-User-Agent": "WeAccess-IOS",
-      "X-Weaccess-Org-Schema": "https",
-      "User-Agent": "WeLink/703 CFNetwork/3860.100.1 Darwin/25.0.0",
-      "X-Weaccess-Auth-Ver": "v3"
-    }
-    
-    try {
-      const loginRequest = new Request(loginURL)
-      loginRequest.method = "POST"
-      loginRequest.headers = loginHeaders
-      loginRequest.body = JSON.stringify(loginBody)
-      
-      const loginResponse = await loginRequest.loadJSON()
-      
-      if (loginResponse.code === 0) {
-        return loginResponse.data.token
-      } else {
-        throw new Error(`登录失败: ${loginResponse.msg}`)
-      }
-    } catch (error) {
-      throw new Error(`登录请求失败: ${error}`)
-    }
-  }
-  
-  // 执行打卡
-  async checkin(accessToken) {
-    const checkinURL = `${this.baseURL}/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront`
-    
-    // 获取当前位置信息
-    const location = await this.getCurrentLocation()
-    
-    const checkinBody = {
-      "employeeNumber": "3ZGHIG5PP7YI@AD802282B91",
-      "x": location.longitude.toString(),
-      "y": location.latitude.toString(),
-      "wifiList": [
-        {
-          "wifiMac": "48:2c:d0:2a:6e:31",
-          "wifiName": "Huawei-Employee"
-        }
-      ],
-      "meapip": "198.18.129.164",
-      "province": location.province,
-      "deviceId": this.deviceId,
-      "locale": "cn",
-      "deviceType": "2",
-      "verticalAccuracy": "0",
-      "location": location.address,
-      "ip": "10.245.32.114",
-      "city": location.city,
-      "country": "中国"
-    }
-    
-    const checkinHeaders = {
-      "Cookie": `token=${accessToken}`,
-      "lang": "zh",
-      "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
-      "traceId": this.generateUUID(),
-      "deviceType": "0",
-      "deviceName": "iPhone15,3",
-      "X-Product-Type": "0",
-      "appVersion": "7.50.10",
-      "uuid": this.deviceId,
-      "osTarget": "1",
-      "appName": "WeLink",
-      "buildCode": "703",
-      "Accept-Language": "en-US;q=1, zh-Hans-US;q=0.9",
-      "X-Cloud-Type": "1",
-      "businessVersionCode": "703",
-      "Content-Type": "application/json"
-    }
-    
-    try {
-      const checkinRequest = new Request(checkinURL)
-      checkinRequest.method = "POST"
-      checkinRequest.headers = checkinHeaders
-      checkinRequest.body = JSON.stringify(checkinBody)
-      
-      const checkinResponse = await checkinRequest.loadJSON()
-      
-      if (checkinResponse.status === "1") {
-        return {
-          success: true,
-          message: checkinResponse.msg,
-          location: checkinResponse.data.location,
-          time: checkinResponse.data.sysDate
-        }
-      } else {
-        return {
-          success: false,
-          message: checkinResponse.msg || "打卡失败"
-        }
-      }
-    } catch (error) {
-      throw new Error(`打卡请求失败: ${error}`)
-    }
-  }
-  
-  // 获取当前位置
-  async getCurrentLocation() {
-    try {
-      // 使用 iOS 定位服务
-      const location = await Location.current()
-      
-      // 逆地理编码获取地址信息
-      const geocoder = new Geocoder()
-      const places = await geocoder.reverseGeocode(location.latitude, location.longitude)
-      
-      if (places.length > 0) {
-        const place = places[0]
-        return {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          province: place.administrativeArea || "江苏省",
-          city: place.locality || "苏州市",
-          address: place.name || "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"
-        }
-      }
-      
-      // 默认位置（华为苏州研究所）
-      return {
-        latitude: 31.275254,
-        longitude: 120.798321,
-        province: "江苏省",
-        city: "苏州市", 
-        address: "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"
-      }
-    } catch (error) {
-      // 如果定位失败，使用默认位置
-      return {
-        latitude: 31.275254,
-        longitude: 120.798321,
-        province: "江苏省",
-        city: "苏州市",
-        address: "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"
-      }
-    }
-  }
-  
-  // 生成 UUID
-  generateUUID() {
-    return 'WK-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
-  }
-  
-  // 主执行函数
-  async run() {
-    try {
-      // 1. 登录获取 token
-      const alert = new Alert()
-      alert.title = "WeLink 自动打卡"
-      alert.message = "正在登录..."
-      await alert.present()
-      
-      const accessToken = await this.login()
-      
-      // 2. 执行打卡
-      alert.message = "登录成功，正在打卡..."
-      await alert.present()
-      
-      const result = await this.checkin(accessToken)
-      
-      // 3. 显示结果
-      if (result.success) {
-        alert.title = "打卡成功"
-        alert.message = `位置: ${result.location}\n时间: ${result.time}`
-      } else {
-        alert.title = "打卡失败" 
-        alert.message = result.message
-      }
-      
-      await alert.present()
-      
-      return result
-      
-    } catch (error) {
-      const alert = new Alert()
-      alert.title = "打卡错误"
-      alert.message = error.message
-      await alert.present()
-      return { success: false, message: error.message }
-    }
-  }
+} catch (e) {
+    console.error(e);
+    alertMessage = e.toString();
 }
 
-// 执行脚本
-if (typeof config !== 'undefined' && config.runsInWidget) {
-  // 小组件模式
-  const widget = new ListWidget()
-  widget.addText("WeLink 打卡")
-  Script.setWidget(widget)
-} else {
-  // 直接运行模式
-  const checker = new WeLinkAutoCheckin()
-  await checker.run()
-}
+// --- 7. 显示结果 ---
+let alert = new Alert();
+alert.title = alertTitle;
+alert.message = alertMessage;
+alert.addAction("OK");
+await alert.present();
+
+Script.complete();
