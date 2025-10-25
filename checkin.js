@@ -62,15 +62,20 @@ try {
     console.log("新的 Refresh Token 已保存。");
 
     // --- 4. 获取动态数据 (GPS 和 WiFi) ---
-    console.log("正在获取当前位置...");
-    Location.setAccuracyToBest();
-    const location = await Location.current();
-    const locX = location.longitude.toString();
-    const locY = location.latitude.toString();
-    
-    console.log("正在获取 WiFi 详情...");
-    const wifiName = Device.wifi.ssid() || "Huawei-Employee";
-    const wifiMac = Device.wifi.bssid() || "48:2c:d0:2a:6e:31";
+	console.log("正在获取当前位置...");
+    Location.setAccuracyToBest();
+    const location = await Location.current();
+    const locX = location.longitude.toString();
+    const locY = location.latitude.toString();
+    
+    // --- 修复 WiFi API 调用 ---
+    console.log("正在获取 WiFi 详情...");
+    // 1. 正确调用 Device.wifi() 函数，它返回一个对象或 undefined
+    const wifiInfo = Device.wifi(); 
+    
+    // 2. 检查 wifiInfo 是否存在。如果不存在 (如使用蜂窝网络)，则使用抓包的默认值 
+    const wifiName = (wifiInfo && wifiInfo.ssid) ? wifiInfo.ssid : "Huawei-Employee";
+    const wifiMac = (wifiInfo && wifiInfo.bssid) ? wifiInfo.bssid : "48:2c:d0:2a:6e:31";
 
     // --- 5. 执行打卡 ---
     console.log("正在发送打卡请求...");
