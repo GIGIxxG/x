@@ -134,15 +134,27 @@ Script.complete();
 * * !! 已修复 - 增加 x-wlk-gray Cookie 捕获 !!
 */
 async function fetchNewTokens(refreshToken) {
-    const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; // [cite: 1]
+    const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg";
     let req = new Request(url);
     req.method = "POST";
     
     // 设置 Headers [来源 1]
-    req.headers = {
+    req.headers = {
+        "lang": "zh",
         "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
-        "uuid": USER_DEVICE_ID,
-        "Content-Type": "application/x-www-form-urlencoded" // [cite: 1]
+        "nflag": "1",
+        "deviceType": "0",
+        "deviceName": "iPhone15,3",
+        "X-Product-Type": "0",
+        "appVersion": "7.50.10",
+        "uuid": USER_DEVICE_ID, // 保持变量
+        "osTarget": "1",
+        "appName": "WeLink",
+        "buildCode": "703",
+        "X-Cloud-Type": "1",
+        "businessVersionCode": "703",
+        "networkType": "Cellular",
+        "Content-Type": "application/x-www-form-urlencoded"
     };
     
     // 设置 Body [来源 1]
@@ -150,7 +162,7 @@ async function fetchNewTokens(refreshToken) {
 
     const responseBody = await req.loadJSON(); 
     
-    const cookies = req.response.cookies;
+    const cookies = req.response.cookies;
     if (!cookies || cookies.length === 0) {
         throw new Error("刷新失败：未在响应中找到 Cookies。");
     }
@@ -164,21 +176,15 @@ async function fetchNewTokens(refreshToken) {
     const cdnToken = cookieMap.get("cdn_token");
     const hwafSESID = cookieMap.get("HWWAFSESID");
     const hwafSESTIME = cookieMap.get("HWWAFSESTIME");
-    // --- 新增修复 ---
-    // 从 refresh 响应中捕获 x-wlk-gray cookie 
-    const xwlkGray = cookieMap.get("x-wlk-gray"); 
+    const xwlkGray = cookieMap.get("x-wlk-gray");
     
     const newRefreshToken = responseBody.refresh_token;
 
-    // --- 新增修复 ---
-    // 确保 xwlkGray 也被正确捕获
     if (!token || !cdnToken || !hwafSESID || !hwafSESTIME || !newRefreshToken || xwlkGray === undefined) {
         console.error("Cookie 或 Token 解析不完整:", cookieMap, responseBody);
         throw new Error("Token 刷新失败: " + (responseBody.msg || "无法解析所有必需的 Cookie 或 refresh_token"));
     }
     
-    // --- 新增修复 ---
-    // 返回 xwlkGray
     return { token, cdnToken, hwafSESID, hwafSESTIME, newRefreshToken, xwlkGray };
 }
 
@@ -187,57 +193,61 @@ async function fetchNewTokens(refreshToken) {
 * (基于 all.txt [来源 81, 82, 83])
 * * !! 已修复 - 修正 Cookie 格式并添加所有缺失的头部 !!
 */
+/**
+* [步骤2] 执行打卡
+* !! 最终修复 - 确保 employeeNumber 强制大写，并移除不兼容的 Authorization 头部 !!
+*/
 async function fetchCheckin(auth, dynamicData) {
-    const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [cite: 81]
+    const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront";
     let req = new Request(url);
     req.method = "POST";
-    
-    // --- 修复 1: 构建与 all.txt 一致的完整 Cookie  ---
-    // 将 x-wlk-gray 包含在 Cookie 字符串中
+
+    // 1. 构建完整的 Cookie
     const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token}; x-wlk-gray=${auth.xwlkGray}`;
     
-    // --- 修复 2: 添加 all.txt 中所有缺失的头部  ---
+    // 2. 设置 Headers (与 all.txt [cite: 102] 严格一致)
     req.headers = {
-        "lang": "zh", // [cite: 81]
-        "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)", // [cite: 81]
-        "Cookie": cookie, // 
-        "uuid": USER_DEVICE_ID, // [cite: 81]
-        "Content-Type": "application/json", // 
-        "deviceType": "0", // [cite: 81]
-        "deviceName": "iPhone15,3", // [cite: 81]
-        "X-Product-Type": "0", // [cite: 81]
-        "appVersion": "7.50.10", // [cite: 81]
-        "osTarget": "1", // [cite: 81]
-        "appName": "WeLink", // [cite: 81]
-        "buildCode": "703", // [cite: 81]
-        "X-Cloud-Type": "1", // [cite: 81]
-        "businessVersionCode": "703" // [cite: 81]
+        "lang": "zh",
+        "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
+        "Cookie": cookie,
+        "uuid": USER_DEVICE_ID, // 保持变量
+        "Content-Type": "application/json",
+        "deviceType": "0", // 注意：请求头中是 "0"
+        "deviceName": "iPhone15,3",
+        "X-Product-Type": "0",
+        "appVersion": "7.50.10",
+        "osTarget": "1",
+        "appName": "WeLink",
+        "buildCode": "703",
+        "X-Cloud-Type": "1",
+        "businessVersionCode": "703"
     };
     
-    // 设置 Body (这部分之前是正确的) [cite: 82, 83]
+    // 3. 设置 Body
     const body = {
-        "employeeNumber" : USER_EMPLOYEE_NUMBER, // 
-        "x" : dynamicData.locX, // 动态
-        "wifiList" : [ // 
+        // 强制转换为大写，与抓包数据  保持一致
+        "employeeNumber" : USER_EMPLOYEE_NUMBER.toUpperCase(), 
+        "x" : dynamicData.locX,
+        "wifiList" : [
             {
-              "wifiMac" : dynamicData.wifiMac, // 动态 (使用硬编码)
-              "wifiName" : dynamicData.wifiName // 动态 (使用硬编码)
+              "wifiMac" : dynamicData.wifiMac,
+              "wifiName" : dynamicData.wifiName
             }
         ],
-        "meapip" : USER_MEAPIP, // 
-        "y" : dynamicData.locY, // 动态
-        "province" : OFFICE_PROVINCE, // 
-        "deviceId" : USER_DEVICE_ID, // 
-        "locale" : "cn", // 
-        "deviceType" : "2", // 
-        "verticalAccuracy" : "0", // 
-        "location" : OFFICE_LOCATION, // 
-        "ip" : USER_IP, // 
-        "city" : OFFICE_CITY, // 
-        "country" : "中国" // [cite: 83]
+        "meapip" : USER_MEAPIP,
+        "y" : dynamicData.locY,
+        "province" : OFFICE_PROVINCE,
+        "deviceId" : USER_DEVICE_ID,
+        "locale" : "cn",
+        "deviceType" : "2", // 注意：请求体中是 "2"
+        "verticalAccuracy" : "0",
+        "location" : OFFICE_LOCATION,
+        "ip" : USER_IP,
+        "city" : OFFICE_CITY,
+        "country" : "中国"
     };
     
     req.body = JSON.stringify(body);
     
-    return await req.loadJSON(); // [cite: 84]
+    return await req.loadJSON();
 }
