@@ -25,11 +25,6 @@ const OFFICE_CITY = "苏州市".trim();
 const OFFICE_PROVINCE = "江苏省".trim();
 const OFFICE_COUNTRY = "中国".trim();
 
-// --- ‼️ 关键修复：固化 GPS 目标坐标 (来自成功抓包的 all.txt) ‼️ ---
-// 目标坐标 (已通过考勤校验的坐标)
-const TARGET_GPS_X = 120.798321;
-const TARGET_GPS_Y = 31.275254;
-
 
 // ------------------------------------------------------------------
 // (2) 脚本逻辑 (通常不需要修改)
@@ -57,7 +52,7 @@ try {
         console.log("使用初始 Token。");
     }
 
-    // --- 2. 执行 Token 刷新 ---
+    // --- 2. 执行 Token 刷新 (增加错误处理) ---
     console.log("正在刷新 Token...");
     let authData;
     try {
@@ -82,16 +77,10 @@ try {
 	console.log("正在获取当前位置...");
     Location.setAccuracyToBest();
     const location = await Location.current();
-    const realLocX = location.longitude;
-    const realLocY = location.latitude;
-    
-    // ‼️ 关键修正：将实际获取的坐标“漂移”到目标坐标 ‼️
-    // 假设定位偏差不变，将获取到的不准坐标移动到围栏内
-    const locX = (realLocX - 120.79399537342611 + TARGET_GPS_X).toString();
-    const locY = (realLocY - 31.277297206512767 + TARGET_GPS_Y).toString();
-
-    console.log(`[LOG] 实际 GPS 坐标: X=${realLocX}, Y=${realLocY}`);
-    console.log(`[LOG] 伪造 GPS 坐标: X=${locX}, Y=${locY}`); 
+    const locX = location.longitude.toString();
+    const locY = location.latitude.toString();
+    
+    console.log(`[LOG] 动态 GPS 坐标: X=${locX}, Y=${locY}`); 
 
     // --- 步骤 4b: 设置 WiFi 详情 ---
     console.log("正在设置 WiFi 详情...");
@@ -113,8 +102,9 @@ try {
     } else {
         alertTitle = "打卡失败";
         alertMessage = checkinResponse.msg || "服务器返回错误。";
-        console.error("\n[CRITICAL ERROR] 打卡失败。当前使用的是坐标漂移修复方案。");
-        console.error(`伪造 GPS: (X:${locX}, Y:${locY})`);
+        // 打印详细的失败信息，以帮助用户理解 Geo-Fence 问题
+        console.error("\n[CRITICAL ERROR] 打卡失败。最可能的原因是地理位置或 IP 校验未通过。");
+        console.error(`当前 GPS: (X:${locX}, Y:${locY}) 距离硬编码 IP: (${USER_IP}, ${USER_MEAPIP}) 存在安全校验冲突。`);
     }
 
 } catch (e) {
@@ -133,17 +123,19 @@ Script.complete();
 
 
 // ------------------------------------------------------------------
-// 辅助函数 (保持不变)
+// 辅助函数
 // ------------------------------------------------------------------
 
 /**
 * [步骤1] 刷新 Token
+* !! 最终修复 - 确保所有头部信息完整 !!
 */
 async function fetchNewTokens(refreshToken) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg";
     let req = new Request(url);
     req.method = "POST";
     
+    // 确保 Refresh 请求头部信息完整，与 refresh.txt 严格一致
     req.headers = {
         "lang": "zh",
         "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
@@ -164,6 +156,7 @@ async function fetchNewTokens(refreshToken) {
     
     req.body = `refresh_token=${encodeURIComponent(refreshToken)}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
 
+    // 尝试用 console.error 打印日志，以绕过 Scriptable 的 console.log 限制
     console.error("\n--- [LOG-ERROR: Token 刷新请求详情] ---");
     console.error("URL:", url);
     console.error("Headers:", JSON.stringify(req.headers));
@@ -200,6 +193,7 @@ async function fetchNewTokens(refreshToken) {
 
 /**
 * [步骤2] 执行打卡
+* !! 最终修复 - 补齐所有头部，并使用 trim() 确保格式正确 !!
 */
 async function fetchCheckin(auth, dynamicData) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront";
@@ -209,7 +203,7 @@ async function fetchCheckin(auth, dynamicData) {
     // 1. 构建完整的 Cookie
     const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token}; x-wlk-gray=${auth.xwlkGray}`;
     
-    // 2. 设置 Headers 
+    // 2. 设置 Headers (与 all.txt 严格一致，并补齐非关键头部)
     req.headers = {
         "lang": "zh",
         "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
@@ -225,6 +219,7 @@ async function fetchCheckin(auth, dynamicData) {
         "buildCode": "703",
         "X-Cloud-Type": "1",
         "businessVersionCode": "703",
+        // 补齐可能缺失的头部
         "Accept": "*/*",
         "Accept-Language": "en-US;q=1, zh-Hans-US;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
@@ -233,7 +228,7 @@ async function fetchCheckin(auth, dynamicData) {
     // 3. 设置 Body
     const body = {
         "employeeNumber" : USER_EMPLOYEE_NUMBER, 
-        "x" : dynamicData.locX, // 使用漂移后的坐标
+        "x" : dynamicData.locX,
         "wifiList" : [
             {
               "wifiMac" : dynamicData.wifiMac,
@@ -241,7 +236,7 @@ async function fetchCheckin(auth, dynamicData) {
             }
         ],
         "meapip" : USER_MEAPIP, 
-        "y" : dynamicData.locY, // 使用漂移后的坐标
+        "y" : dynamicData.locY,
         "province" : OFFICE_PROVINCE,
         "deviceId" : USER_DEVICE_ID,
         "locale" : "cn",
@@ -253,6 +248,7 @@ async function fetchCheckin(auth, dynamicData) {
         "country" : OFFICE_COUNTRY
     };
     
+    // 尝试用 console.error 打印日志
     console.error("\n--- [LOG-ERROR: 打卡签到请求详情] ---");
     console.error("URL:", url);
     console.error("Headers:", JSON.stringify(req.headers));
