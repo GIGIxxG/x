@@ -10,9 +10,9 @@
 const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
 
 // --- 仅需抓取一次的静态/初始配置 ---
-// 粘贴您抓取到的 *初始* 的 refresh_token 值 (来自 refresh.txt Response Body)
+// 粘贴您抓取到的 *初始* 的 refresh_token 值 (来自 refresh.txt Request Body，需要URL解码)
 // 脚本会自动更新这个值。
-const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T"; // [cite: 1]
+const INITIAL_REFRESH_TOKEN = "qWTB3obvCBSlW9HdMkONzQ==9lZfJZYNBixj+6sFORKyfiVM0nHJzR3qaQFic4W9snIfmHTLeAANWIXC36xQL/+/4UQzMeNhe7v6a348NOX3vGjIRaYnn/uo80mEcq/xaZ9V3+MiQW1J5B9s8jhHLFCJgQTaQ2K5qpAJA+J3IC9mSm/5scDLT6l+D2UhdE9sRZAxcoWxpbpM8v0bvdHqVtdRWLeWqzRxqYiSPScNZuCqvDb7XKBq1or94gi/RTqfsR2Z3SrslOCPoe/zTCp6z0FgmCZk1m5KKtU3Tao09C40QYJlIxOLfhgUJtiFibNr+66U"; // [cite: 1]
 
 // 粘贴 refresh.txt Request Body 中 `tenantid=...` 的值
 const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2BBv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl66EK6MWmooviS135GSXcEUm8W5WmluD/l"; // [cite: 1]
@@ -155,6 +155,10 @@ async function refreshAuthData(authData) {
         console.log("🔍 调试信息 - 响应头:");
         console.log(`   Status Code: ${req.response.statusCode}`);
         console.log(`   Headers: ${JSON.stringify(req.response.headers, null, 2)}`);
+
+        // 调试：输出响应体信息
+        console.log("🔍 调试信息 - 响应体:");
+        console.log(`   Response Data: ${JSON.stringify(responseData, null, 2)}`);
 
         // 修复Cookie解析逻辑 - 处理多个Set-Cookie头
         let newAccessToken = null;
