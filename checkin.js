@@ -97,9 +97,9 @@ try {
     // --- 6. 处理打卡响应 ---
     console.log("收到打卡响应:");
     console.log(JSON.stringify(checkinResponse)); // 确保对象被完整打印
-    if (checkinResponse.status === "1" && checkinResponse.msg === "打卡成功") {
+    if (checkinResponse.status === "1" && checkinResponse.msg === "打卡成功") { [cite: 84]
         alertTitle = "打卡成功";
-        alertMessage = `时间: ${checkinResponse.data.sysDate}\n地点: ${checkinResponse.data.location}`;
+        alertMessage = `时间: ${checkinResponse.data.sysDate}\n地点: ${checkinResponse.data.location}`; [cite: 84]
     } else {
         alertTitle = "打卡失败";
         alertMessage = checkinResponse.msg || "服务器返回错误。";
@@ -126,18 +126,19 @@ Script.complete();
 
 /**
 * [步骤1] 刷新 Token
-* !! 最终修复 - 增加所有设备头部以完善会话状态 !!
-* !! 增加超详细日志 !!
+* !! 最终修复 - 已补全 refresh.txt  中所有缺失的头部信息 !!
 */
 async function fetchNewTokens(refreshToken) {
-    const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg";
+    const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; [cite: 1]
     let req = new Request(url);
     req.method = "POST";
     
-    // 确保 Refresh 请求头部信息完整，与 refresh.txt 严格一致
+    // 确保 Refresh 请求头部信息完整，与 refresh.txt  严格一致
     req.headers = {
         "lang": "zh",
         "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
+        // --- [修复] ---
+        "traceId": "WK-A3D2F74B-4C24-4D24-BB47-D7D19F2C167A", // 
         "nflag": "1",
         "deviceType": "0",
         "deviceName": "iPhone15,3",
@@ -147,10 +148,15 @@ async function fetchNewTokens(refreshToken) {
         "osTarget": "1",
         "appName": "WeLink",
         "buildCode": "703",
+        // --- [修复] ---
+        "Accept-Language": "en-US;q=1, zh-Hans-US;q=0.9", // 
         "X-Cloud-Type": "1",
         "businessVersionCode": "703",
         "networkType": "Cellular",
-        "Content-Type": "application/x-www-form-urlencoded"
+        // --- [修复] ---
+        "Accept": "*/*", // 
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept-Encoding": "gzip, deflate, br" // 
     };
     
     req.body = `refresh_token=${encodeURIComponent(refreshToken)}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
@@ -162,7 +168,7 @@ async function fetchNewTokens(refreshToken) {
     console.log("Body (部分):", req.body.slice(0, 100) + "...");
     console.log("---------------------------------\n");
 
-    // --- 修复：使用 loadString() 和手动解析 ---
+    // --- 保持详细日志记录 ---
     let responseString;
     let responseBody;
     try {
@@ -176,7 +182,7 @@ async function fetchNewTokens(refreshToken) {
         console.log("Response Body (Raw):", responseString);
         console.log("----------------------------------\n");
 
-        // 3. 尝试解析
+        // 3. 尝试解析 (现在应该能成功了)
         responseBody = JSON.parse(responseString); 
     } catch (e) {
         console.error("!!! [CRITICAL] 刷新 Token 失败：无法加载或解析响应。");
@@ -198,6 +204,7 @@ async function fetchNewTokens(refreshToken) {
     console.log(JSON.stringify(Object.fromEntries(cookieMap), null, 2));
     console.log("---------------------------------\n");
 
+    // 现在这些值应该能被正确解析
     const token = cookieMap.get("token");
     const cdnToken = cookieMap.get("cdn_token");
     const hwafSESID = cookieMap.get("HWWAFSESID");
@@ -225,17 +232,17 @@ async function fetchNewTokens(refreshToken) {
 
 /**
 * [步骤2] 执行打卡
-* !! 最终修复 - 确保所有字段严格匹配抓包数据 !!
+* (此函数无需修改)
 */
 async function fetchCheckin(auth, dynamicData) {
-    const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront";
+    const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; [cite: 81]
     let req = new Request(url);
     req.method = "POST";
 
     // 1. 构建完整的 Cookie
     const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token}; x-wlk-gray=${auth.xwlkGray}`;
     
-    // 2. 设置 Headers (与 all.txt 严格一致)
+    // 2. 设置 Headers (与 all.txt [cite: 81, 82] 严格一致)
     req.headers = {
         "lang": "zh",
         "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
@@ -253,7 +260,7 @@ async function fetchCheckin(auth, dynamicData) {
         "businessVersionCode": "703"
     };
     
-    // 3. 设置 Body
+    // 3. 设置 Body [cite: 83]
     const body = {
         "employeeNumber" : USER_EMPLOYEE_NUMBER, // 已在配置区强制大写
         "x" : dynamicData.locX,
