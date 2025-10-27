@@ -7,23 +7,27 @@
 
 // --- 来自 refresh.txt [来源 88] (Response Body) ---
 // 粘贴您抓取到的 *最新* 的 refresh_token 值
+// 这是脚本的“启动种子”，它只在第一次运行时使用。
+// 脚本会自动更新这个值。
 const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T";
 
 // --- 来自 refresh.txt [来源 86] (Request Body) ---
+// 粘贴 refresh.txt 请求体中的 `tenantid=...` 的值
+// !! 注意：只粘贴 `&` 和 `tenantid=` 之间的部分
 const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2BBv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l";
 
 // --- 来自 all.txt (checkin 请求) [来源 2, 3] ---
-const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; 
-// 强制大写并去除首尾空格
-const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91".toUpperCase().trim(); 
-const USER_IP = "10.245.32.114".trim(); 
-const USER_MEAPIP = "198.18.129.164".trim(); 
+const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid'
+// 强制大写以匹配服务器校验
+const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91".toUpperCase(); 
+const USER_IP = "10.245.32.114"; // 强制硬编码以匹配抓包时 IP
+const USER_MEAPIP = "198.18.129.164"; // 强制硬编码以匹配抓包时 MEAP IP
 
 // --- (来自 checkin req body [来源 3]) ---
-const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)".trim();
-const OFFICE_CITY = "苏州市".trim();
-const OFFICE_PROVINCE = "江苏省".trim();
-const OFFICE_COUNTRY = "中国".trim();
+const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)";
+const OFFICE_CITY = "苏州市";
+const OFFICE_PROVINCE = "江苏省";
+const OFFICE_COUNTRY = "中国";
 
 
 // ------------------------------------------------------------------
@@ -42,7 +46,7 @@ try {
     // --- 1. 加载 Refresh Token ---
     console.log("正在加载 Refresh Token...");
     let currentRefreshToken;
-    let tokenLoadedFromFile = false; 
+    let tokenLoadedFromFile = false; // 标记是否从文件加载
     if (fm.fileExists(tokenFilePath)) {
         currentRefreshToken = fm.readString(tokenFilePath);
         tokenLoadedFromFile = true;
@@ -58,6 +62,7 @@ try {
     try {
         authData = await fetchNewTokens(currentRefreshToken);
     } catch (e) {
+        // 检查是否是 URIError 并且 token 是从文件加载的
         if (e.name === "URIError" && tokenLoadedFromFile) {
             console.warn("文件中的 Token 似乎已损坏。正在删除并使用初始 Token 重试...");
             fm.remove(tokenFilePath); 
@@ -71,7 +76,6 @@ try {
     // --- 3. 保存新的 Refresh Token ---
     fm.writeString(tokenFilePath, authData.newRefreshToken);
     console.log("新的 Refresh Token 已保存。");
-    console.log(`[LOG] 成功获取的 Token 数据: token=...${authData.token.slice(-10)}, xwlkGray=${authData.xwlkGray}`); 
 
     // --- 4. 获取动态数据 (GPS 和 WiFi) ---
 	console.log("正在获取当前位置...");
@@ -80,14 +84,11 @@ try {
     const locX = location.longitude.toString();
     const locY = location.latitude.toString();
     
-    console.log(`[LOG] 动态 GPS 坐标: X=${locX}, Y=${locY}`); 
-
     // --- 步骤 4b: 设置 WiFi 详情 ---
     console.log("正在设置 WiFi 详情...");
+    // 使用抓包时的硬编码值，绕过 Scriptable 的 API 限制和 BSSID 缺失问题。
     const wifiName = "Huawei-Employee";
     const wifiMac = "48:2c:d0:2a:6e:31"; 
-
-    console.log(`[LOG] 固化 WiFi/IP 数据: Name=${wifiName}, MAC=${wifiMac}, IP=${USER_IP}, MEAPIP=${USER_MEAPIP}`);
 
     // --- 5. 执行打卡 ---
     console.log("正在发送打卡请求...");
@@ -102,9 +103,6 @@ try {
     } else {
         alertTitle = "打卡失败";
         alertMessage = checkinResponse.msg || "服务器返回错误。";
-        // 打印详细的失败信息，以帮助用户理解 Geo-Fence 问题
-        console.error("\n[CRITICAL ERROR] 打卡失败。最可能的原因是地理位置或 IP 校验未通过。");
-        console.error(`当前 GPS: (X:${locX}, Y:${locY}) 距离硬编码 IP: (${USER_IP}, ${USER_MEAPIP}) 存在安全校验冲突。`);
     }
 
 } catch (e) {
@@ -128,7 +126,7 @@ Script.complete();
 
 /**
 * [步骤1] 刷新 Token
-* !! 最终修复 - 确保所有头部信息完整 !!
+* !! 最终修复 - 增加所有设备头部以完善会话状态 !!
 */
 async function fetchNewTokens(refreshToken) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg";
@@ -144,7 +142,7 @@ async function fetchNewTokens(refreshToken) {
         "deviceName": "iPhone15,3",
         "X-Product-Type": "0",
         "appVersion": "7.50.10",
-        "uuid": USER_DEVICE_ID,
+        "uuid": USER_DEVICE_ID, // 保持变量
         "osTarget": "1",
         "appName": "WeLink",
         "buildCode": "703",
@@ -155,13 +153,6 @@ async function fetchNewTokens(refreshToken) {
     };
     
     req.body = `refresh_token=${encodeURIComponent(refreshToken)}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
-
-    // 尝试用 console.error 打印日志，以绕过 Scriptable 的 console.log 限制
-    console.error("\n--- [LOG-ERROR: Token 刷新请求详情] ---");
-    console.error("URL:", url);
-    console.error("Headers:", JSON.stringify(req.headers));
-    console.error("Body (部分):", req.body.slice(0, 100) + "..."); 
-    console.error("----------------------------------------\n");
 
     const responseBody = await req.loadJSON(); 
     
@@ -193,7 +184,7 @@ async function fetchNewTokens(refreshToken) {
 
 /**
 * [步骤2] 执行打卡
-* !! 最终修复 - 补齐所有头部，并使用 trim() 确保格式正确 !!
+* !! 最终修复 - 确保所有字段严格匹配抓包数据 !!
 */
 async function fetchCheckin(auth, dynamicData) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront";
@@ -203,7 +194,7 @@ async function fetchCheckin(auth, dynamicData) {
     // 1. 构建完整的 Cookie
     const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token}; x-wlk-gray=${auth.xwlkGray}`;
     
-    // 2. 设置 Headers (与 all.txt 严格一致，并补齐非关键头部)
+    // 2. 设置 Headers (与 all.txt 严格一致)
     req.headers = {
         "lang": "zh",
         "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
@@ -218,16 +209,12 @@ async function fetchCheckin(auth, dynamicData) {
         "appName": "WeLink",
         "buildCode": "703",
         "X-Cloud-Type": "1",
-        "businessVersionCode": "703",
-        // 补齐可能缺失的头部
-        "Accept": "*/*",
-        "Accept-Language": "en-US;q=1, zh-Hans-US;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
+        "businessVersionCode": "703"
     };
     
     // 3. 设置 Body
     const body = {
-        "employeeNumber" : USER_EMPLOYEE_NUMBER, 
+        "employeeNumber" : USER_EMPLOYEE_NUMBER, // 已在配置区强制大写
         "x" : dynamicData.locX,
         "wifiList" : [
             {
@@ -235,7 +222,7 @@ async function fetchCheckin(auth, dynamicData) {
               "wifiName" : dynamicData.wifiName
             }
         ],
-        "meapip" : USER_MEAPIP, 
+        "meapip" : USER_MEAPIP, // 硬编码
         "y" : dynamicData.locY,
         "province" : OFFICE_PROVINCE,
         "deviceId" : USER_DEVICE_ID,
@@ -243,19 +230,11 @@ async function fetchCheckin(auth, dynamicData) {
         "deviceType" : "2", 
         "verticalAccuracy" : "0",
         "location" : OFFICE_LOCATION,
-        "ip" : USER_IP, 
+        "ip" : USER_IP, // 硬编码
         "city" : OFFICE_CITY,
-        "country" : OFFICE_COUNTRY
+        "country" : "中国"
     };
     
-    // 尝试用 console.error 打印日志
-    console.error("\n--- [LOG-ERROR: 打卡签到请求详情] ---");
-    console.error("URL:", url);
-    console.error("Headers:", JSON.stringify(req.headers));
-    console.error("Cookie String:", cookie);
-    console.error("Body (JSON):", JSON.stringify(body));
-    console.error("---------------------------------------\n");
-
     req.body = JSON.stringify(body);
     
     return await req.loadJSON();
