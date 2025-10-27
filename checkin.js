@@ -1,6 +1,6 @@
 // Scriptable 脚本 for WeLink 自动打卡
 // 功能: 自动刷新用户Token, 并自动执行打卡。
-// 版本: 2.0 (增强日志和通知)
+// 版本: 2.1 (根据用户需求，始终使用横幅通知)
 //
 // ------------------------------------------------------------------
 // ⚠️ --- (1) 用户配置 (必须更新为您自己的信息!) --- ⚠️
@@ -12,32 +12,32 @@ const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
 // --- 仅需抓取一次的静态/初始配置 ---
 // 粘贴您抓取到的 *初始* 的 refresh_token 值 (来自 refresh.txt Response Body)
 // 脚本会自动更新这个值。
-const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T"; // [cite: 86] (来自 refresh.txt)
+const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T"; // (来自 refresh.txt)
 
 // 粘贴 refresh.txt Request Body 中 `tenantid=...` 的值 (注意：是完整的URL编码后的值)
-const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l";
+const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; // (来自 refresh.txt)
 
 // --- 打卡地理位置/设备信息配置 (来自 all.txt Request Body/Headers) ---
 // **注意：所有值都应该替换为您自己抓取到的数据！**
 
-const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' [cite: 2] and 'deviceId' [cite: 2]
-const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber' [cite: 2]
-const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent' [cite: 1]
+const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId'
+const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber'
+const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent'
 
 // 伪造的IP信息 (请替换为您的抓包值)
-const USER_IP = "10.245.32.114"; // 'ip' [cite: 2]
-const USER_MEAPIP = "198.18.129.164"; // 'meapip' [cite: 2]
+const USER_IP = "10.245.32.114"; // 'ip'
+const USER_MEAPIP = "198.18.129.164"; // 'meapip'
 
 // 地理位置信息 (请替换为您的抓包值)
-const OFFICE_LOC_X = "120.798321"; // 'x' 经度 [cite: 2]
-const OFFICE_LOC_Y = "31.275254"; // 'y' 纬度 [cite: 2]
-const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 'location' [cite: 2]
-const OFFICE_PROVINCE = "江苏省"; // 'province' [cite: 2]
-const OFFICE_CITY = "苏州市"; // 'city' [cite: 2]
+const OFFICE_LOC_X = "120.798321"; // 'x' 经度
+const OFFICE_LOC_Y = "31.275254"; // 'y' 纬度
+const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 'location'
+const OFFICE_PROVINCE = "江苏省"; // 'province'
+const OFFICE_CITY = "苏州市"; // 'city'
 
 // WiFi信息 (请替换为您的抓包值)
-const WIFI_MAC = "48:2c:d0:2a:6e:31"; // wifiList[0].wifiMac [cite: 2]
-const WIFI_NAME = "Huawei-Employee"; // wifiList[0].wifiName [cite: 2]
+const WIFI_MAC = "48:2c:d0:2a:6e:31"; // wifiList[0].wifiMac
+const WIFI_NAME = "Huawei-Employee"; // wifiList[0].wifiName
 
 // ------------------------------------------------------------------
 // --- (2) 核心函数实现 ---
@@ -105,7 +105,7 @@ function saveAuthData(auth) {
 
 /**
  * 解析 Set-Cookie 头部，提取关键的 token 和 cdn_token。
- * @param {string} cookieHeader - 完整的 Set-Cookie 字符串 [cite: 4, 6, 7, 8, 87, 88]
+ * @param {string} cookieHeader - 完整的 Set-Cookie 字符串
  * @param {AuthData} currentAuth - 当前认证数据对象
  * @returns {void}
  */
@@ -124,19 +124,19 @@ function parseSetCookie(cookieHeader, currentAuth) {
 
     if (cdnMatch) {
         currentAuth.cdnToken = cdnMatch[1].split(';')[0];
-        console.log(`💡 更新 cdnToken: ${mask(currentAuth.cdnToken)}`); // [cite: 7, 87]
+        console.log(`💡 更新 cdnToken: ${mask(currentAuth.cdnToken)}`); //
     }
     if (tokenMatch) {
         currentAuth.token = tokenMatch[1].split(';')[0];
-        console.log(`💡 更新 token (Access Token): ${mask(currentAuth.token)}`); // [cite: 7, 87]
+        console.log(`💡 更新 token (Access Token): ${mask(currentAuth.token)}`); //
     }
     if (hwsidMatch) {
         currentAuth.hwafSESID = hwsidMatch[1].split(';')[0];
-        console.log(`💡 更新 HWWAFSESID: ${mask(currentAuth.hwafSESID)}`); // [cite: 1, 6, 87]
+        console.log(`💡 更新 HWWAFSESID: ${mask(currentAuth.hwafSESID)}`); //
     }
     if (hwtimeMatch) {
         currentAuth.hwafSESTIME = hwtimeMatch[1].split(';')[0];
-        console.log(`💡 更新 HWWAFSESTIME: ${mask(currentAuth.hwafSESTIME)}`); // [cite: 1, 6, 87]
+        console.log(`💡 更新 HWWAFSESTIME: ${mask(currentAuth.hwafSESTIME)}`); //
     }
 }
 
@@ -147,19 +147,19 @@ function parseSetCookie(cookieHeader, currentAuth) {
  * @returns {Promise<boolean>} - 刷新成功返回 true，否则返回 false。
  */
 async function refreshAuthData(auth) {
-    const refreshURL = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; // [cite: 86]
+    const refreshURL = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; //
     let req = new Request(refreshURL);
     req.method = "POST";
     
-    // Header 配置 [cite: 86]
+    // Header 配置
     req.headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/x-form-urlencoded",
         "User-Agent": USER_AGENT,
         "uuid": USER_DEVICE_ID,
         "lang": "zh"
     };
 
-    // Body 配置，注意 refresh_token 需要进行 URI 编码 [cite: 86]
+    // Body 配置，注意 refresh_token 需要进行 URI 编码
     const encodedRefreshToken = encodeURIComponent(auth.refreshToken);
     req.body = `refresh_token=${encodedRefreshToken}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
 
@@ -173,7 +173,7 @@ async function refreshAuthData(auth) {
             return false;
         }
 
-        // 1. 提取新的 refresh_token (来自 Response Body) [cite: 86]
+        // 1. 提取新的 refresh_token (来自 Response Body)
         if (response && response.refresh_token) {
             auth.refreshToken = response.refresh_token;
             console.log(`✅ 成功获取并更新 new refresh_token: ${mask(auth.refreshToken)}`);
@@ -181,7 +181,7 @@ async function refreshAuthData(auth) {
             console.warn("⚠️ 警告: Response Body 中未找到新的 refresh_token。");
         }
         
-        // 2. 提取新的 Access Token 和 cdn_token (来自 Set-Cookie Header) [cite: 87, 88]
+        // 2. 提取新的 Access Token 和 cdn_token (来自 Set-Cookie Header)
         const setCookieHeader = req.response.headers["Set-Cookie"];
         if (setCookieHeader) {
             parseSetCookie(setCookieHeader, auth);
@@ -209,14 +209,14 @@ async function refreshAuthData(auth) {
  * @returns {Promise<string>} - 返回打卡结果信息。
  */
 async function checkin(auth) {
-    const checkinURL = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [cite: 1]
+    const checkinURL = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; //
     let req = new Request(checkinURL);
     req.method = "POST";
 
-    // 构建完整的 Cookie 字符串 [cite: 1]
+    // 构建完整的 Cookie 字符串
     const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token};`;
 
-    // 设置 Headers [cite: 1, 2]
+    // 设置 Headers
     req.headers = {
         "lang": "zh",
         "User-Agent": USER_AGENT,
@@ -228,7 +228,7 @@ async function checkin(auth) {
         "Content-Type": "application/json"
     };
 
-    // 设置 Body [cite: 2, 3]
+    // 设置 Body
     const body = {
         "employeeNumber" : USER_EMPLOYEE_NUMBER,
         "x" : OFFICE_LOC_X,
@@ -261,7 +261,7 @@ async function checkin(auth) {
         
         const response = await req.loadJSON();
 
-        // [cite: 4]
+        //
         if (response && response.status === "1" && response.msg === "打卡成功") {
             console.log("🎉 打卡成功！");
             return `打卡成功: ${response.msg} (${response.data.location}) [${response.data.sysDate}]`;
@@ -304,19 +304,29 @@ async function main() {
     const isSuccess = result.startsWith("打卡成功");
     const notificationTitle = isSuccess ? "✅ WeLink 打卡成功" : "❌ WeLink 打卡失败";
 
-    if (config.runsInApp) {
-        // 在 Scriptable 应用内运行时，显示通知 (已修复 API 调用)
-        let alert = new Alert();
-        alert.title = notificationTitle;
-        alert.message = result;
-        await alert.present();
-    } else {
-        // 作为小组件或自动化定时任务运行时，发送通知
-        let notification = new Notification();
-        notification.title = notificationTitle;
-        notification.body = result;
-        await notification.schedule();
-    }
+    // ------------------------------------------------------------------
+    // --- [!] 修改点 ---
+    // ------------------------------------------------------------------
+    // 根据用户要求：移除 Alert (弹窗)，始终使用 Notification (横幅通知)。
+    
+    // 原来的代码:
+    // if (config.runsInApp) {
+    //     let alert = new Alert();
+    //     alert.title = notificationTitle;
+    //     alert.message = result;
+    //     await alert.present();
+    // } else {
+    //     let notification = new Notification();
+    //     notification.title = notificationTitle;
+    //     notification.body = result;
+    //     await notification.schedule();
+    // }
+
+    // 修改后的代码:
+    let notification = new Notification();
+    notification.title = notificationTitle;
+    notification.body = result;
+    await notification.schedule(); // 始终发送横幅通知
     
     Script.complete();
 }
