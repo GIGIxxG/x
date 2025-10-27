@@ -1,6 +1,6 @@
 // Scriptable 脚本 for WeLink 自动打卡
 // 功能: 自动刷新用户Token, 并自动执行打卡。
-// 版本: 2.3 (增强日志 + 修正刷新逻辑)
+// 版本: 2.4 (修正Token数据源 + 强化错误处理)
 //
 // ------------------------------------------------------------------
 // ⚠️ --- (1) 用户配置 (必须更新为您自己的信息!) --- ⚠️
@@ -10,26 +10,25 @@
 const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
 
 // --- 仅需抓取一次的静态/初始配置 ---
-// 粘贴您抓取到的 *初始* 的 refresh_token 值 (来自 refresh.txt Response Body)
-// 脚本会自动更新这个值。
-const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T"; // (来自 refresh.txt)
+// [!] 已修正此 Token (来自 login.txt 的 response body) 
+const INITIAL_REFRESH_TOKEN = "qWTB3obvCBSlW9HdMkONzQ==9lZfJZYNBixj+6sFORKyfiVM0nHJzR3qaQFic4W9snIfmHTLeAANWIXC36xQL/+/4UQzMeNhe7v6a348NOX3vGjIRaYnn/uo80mEcq/xaZ9V3+MiQW1J5B9s8jhHLFCJgQTaQ2K5qpAJA+J3IC9mSm/5scDLT6l+D2UhdE9sRZAxcoWxpbpM8v0bvdHqVtdRWLeWqzRxqYiSPScNZuCqvDb7XKBq1or94gi/RTqfsR2Z3SrslOCPoe/zTCp6z0FgmCZk1m5KKtU3Tao09C40QYJlIxOLfhgUJtiFibNr+66U";
 
 // 粘贴 refresh.txt Request Body 中 `tenantid=...` 的值 (注意：是完整的URL编码后的值)
-const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; // (来自 refresh.txt)
+const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; // (来自 refresh.txt) 
 
 // --- 打卡地理位置/设备信息配置 (来自 all.txt Request Body/Headers) ---
-const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId'
-const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber'
-const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent'
-const USER_IP = "10.245.32.114"; // 'ip'
-const USER_MEAPIP = "198.18.129.164"; // 'meapip'
-const OFFICE_LOC_X = "120.798321"; // 'x' 经度
-const OFFICE_LOC_Y = "31.275254"; // 'y' 纬度
-const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 'location'
-const OFFICE_PROVINCE = "江苏省"; // 'province'
-const OFFICE_CITY = "苏州市"; // 'city'
-const WIFI_MAC = "48:2c:d0:2a:6e:31"; // wifiList[0].wifiMac
-const WIFI_NAME = "Huawei-Employee"; // wifiList[0].wifiName
+const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId' [cite: 1, 6]
+const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber' [cite: 1]
+const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent' [cite: 1, 6]
+const USER_IP = "10.245.32.114"; // 'ip' [cite: 1]
+const USER_MEAPIP = "198.18.129.164"; // 'meapip' [cite: 1]
+const OFFICE_LOC_X = "120.798321"; // 'x' 经度 [cite: 1]
+const OFFICE_LOC_Y = "31.275254"; // 'y' 纬度 [cite: 1]
+const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 'location' [cite: 1]
+const OFFICE_PROVINCE = "江苏省"; // 'province' [cite: 1]
+const OFFICE_CITY = "苏州市"; // 'city' [cite: 1]
+const WIFI_MAC = "48:2c:d0:2a:6e:31"; // wifiList[0].wifiMac [cite: 1]
+const WIFI_NAME = "Huawei-Employee"; // wifiList[0].wifiName [cite: 1]
 
 // ------------------------------------------------------------------
 // --- (2) 核心函数实现 ---
@@ -116,12 +115,12 @@ function parseSetCookie(cookieHeader, currentAuth) {
  * @returns {Promise<boolean>} - 刷新成功返回 true，否则返回 false。
  */
 async function refreshAuthData(auth) {
-    const refreshURL = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; // [cite: 86]
+    const refreshURL = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; //
     let req = new Request(refreshURL);
     req.method = "POST";
     
     req.headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/x-form-urlencoded",
         "User-Agent": USER_AGENT,
         "uuid": USER_DEVICE_ID,
         "lang": "zh"
@@ -133,21 +132,24 @@ async function refreshAuthData(auth) {
     try {
         console.log("🚀 正在执行 Token 刷新请求...");
         
-        // --- [!] 修改点 1: 增加日志 ---
-        // 使用 loadString() 捕获所有响应，包括非JSON错误
         const responseText = await req.loadString();
-        // 打印服务器返回的原始响应体，用于调试
         console.log(`ℹ️ 刷新请求的原始响应 (Raw Response): ${responseText}`);
 
         let response;
         try {
-            response = JSON.parse(responseText); // 尝试解析JSON
+            response = JSON.parse(responseText);
         } catch (jsonError) {
             console.error(`❌ Token 刷新失败：响应不是有效的 JSON。`);
             return false;
         }
-        // --- [!] 修改点 1 结束 ---
 
+        // --- [!] 关键修复 (v2.4) ---
+        // 如果服务器返回了 errorCode，则立即判定为失败
+        if (response && response.errorCode) {
+            console.error(`❌ Token 刷新失败: ${response.errorMessage} (Code: ${response.errorCode})`);
+            return false;
+        }
+        // --- 修复结束 ---
 
         if (req.response.statusCode !== 200) {
             console.error(`❌ Token 刷新失败，状态码: ${req.response.statusCode}`);
@@ -155,17 +157,15 @@ async function refreshAuthData(auth) {
             return false;
         }
 
-        // --- [!] 修改点 2: 修正刷新逻辑 ---
-        // 1. 检查新的 refresh_token (这是可选的)
+        // 1. 检查新的 refresh_token (可选)
         if (response && response.refresh_token) {
             auth.refreshToken = response.refresh_token;
             console.log(`✅ 成功获取并更新 new refresh_token: ${mask(auth.refreshToken)}`);
         } else {
             console.log("ℹ️ 响应中未包含 new refresh_token，将沿用旧的 refresh_token。");
-            // 注意：我们不再因此而失败
         }
         
-        // 2. 检查新的 cookies (这是必须的)
+        // 2. 检查新的 cookies (必须)
         let gotNewCookies = false;
         const setCookieHeader = req.response.headers["Set-Cookie"];
         if (setCookieHeader) {
@@ -176,15 +176,14 @@ async function refreshAuthData(auth) {
             }
         }
 
-        // 只要成功获取了 new cookies (包含 access token)，就视为刷新成功
         if (gotNewCookies) {
+            // 只有在明确拿到新 Cookie 且没有 errorCode 时才保存
             saveAuthData(auth);
             return true;
         } else {
             console.error("❌ Token 刷新失败。未能在 Set-Cookie 中提取到新的 token/cdn_token。");
             return false;
         }
-        // --- [!] 修改点 2 结束 ---
 
     } catch (e) {
         console.error("❌ Token 刷新请求异常:", e);
@@ -198,7 +197,7 @@ async function refreshAuthData(auth) {
  * @returns {Promise<string>} - 返回打卡结果信息。
  */
 async function checkin(auth) {
-    const checkinURL = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [cite: 1]
+    const checkinURL = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; //
     let req = new Request(checkinURL);
     req.method = "POST";
 
@@ -208,7 +207,7 @@ async function checkin(auth) {
         "lang": "zh",
         "User-Agent": USER_AGENT,
         "Cookie": cookie,
-        "x-wlk-gray": "0", // [cite: 2]
+        "x-wlk-gray": "0", //
         "uuid": USER_DEVICE_ID,
         "X-Product-Type": "0",
         "appVersion": "7.50.10",
@@ -234,7 +233,7 @@ async function checkin(auth) {
         "location" : OFFICE_LOCATION,
         "ip" : USER_IP,
         "city" : OFFICE_CITY,
-        "country" : "中国" // [cite: 3]
+        "country" : "中国" //
     };
     req.body = JSON.stringify(body);
 
@@ -247,9 +246,9 @@ async function checkin(auth) {
         
         const response = await req.loadJSON();
 
-        if (response && response.status === "1" && response.msg === "打卡成功") { // [cite: 4]
+        if (response && response.status === "1" && response.msg === "打卡成功") { //
             console.log("🎉 打卡成功！");
-            return `打卡成功: ${response.msg} (${response.data.location}) [${response.data.sysDate}]`; // [cite: 4]
+            return `打卡成功: ${response.msg} (${response.data.location}) [${response.data.sysDate}]`; //
         } else {
             const errorMsg = response.msg || `状态码: ${req.response.statusCode}, 响应: ${JSON.stringify(response)}`;
             console.error(`❌ 打卡失败: ${errorMsg}`);
@@ -276,7 +275,7 @@ async function main() {
     if (refreshSuccess) {
         result = await checkin(authData);
     } else {
-        result = "Token 刷新失败，无法执行打卡。请检查配置或抓取新的 INITIAL_REFRESH_TOKEN。";
+        result = "Token 刷新失败，无法执行打卡。请检查配置或 Keychain。";
     }
 
     console.log("=== 脚本执行完毕 ===");
