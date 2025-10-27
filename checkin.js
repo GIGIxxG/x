@@ -12,25 +12,25 @@ const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
 // --- 仅需抓取一次的静态/初始配置 ---
 // 粘贴您抓取到的 *初始* 的 refresh_token 值 (来自 refresh.txt Response Body)
 // 脚本会自动更新这个值。
-const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T"; [cite_start]// [cite: 1]
+const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T"; // [cite: 1]
 
 // 粘贴 refresh.txt Request Body 中 `tenantid=...` 的值
-const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2BBv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl66EK6MWmooviS135GSXcEUm8W5WmluD/l"; [cite_start]// [cite: 1]
+const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2BBv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl66EK6MWmooviS135GSXcEUm8W5WmluD/l"; // [cite: 1]
 
 // --- 打卡地理位置/设备信息配置 (来自 all.txt Request Body/Headers) ---
-const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; [cite_start]// 'uuid' and 'deviceId' [cite: 127]
-const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; [cite_start]// 'employeeNumber' [cite: 127]
-const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; [cite_start]// 'User-Agent' [cite: 126]
-const USER_IP = "10.245.32.114"; [cite_start]// 'ip' [cite: 127]
-const USER_MEAPIP = "198.18.129.164"; [cite_start]// 'meapip' [cite: 127]
+const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId' [cite: 127]
+const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber' [cite: 127]
+const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent' [cite: 126]
+const USER_IP = "10.245.32.114"; // 'ip' [cite: 127]
+const USER_MEAPIP = "198.18.129.164"; // 'meapip' [cite: 127]
 
 // 地理位置信息 (请替换为您的抓包值)
-const USER_X = "120.798321"; [cite_start]// 经度 X [cite: 127]
-const USER_Y = "31.275254"; [cite_start]// 纬度 Y [cite: 127]
-const USER_PROVINCE = "江苏省"; [cite_start]// 省份 [cite: 127]
-const USER_CITY = "苏州市"; [cite_start]// 城市 [cite: 128]
-const USER_COUNTRY = "中国"; [cite_start]// 国家 [cite: 128]
-const USER_LOCATION_DETAIL = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; [cite_start]// 详细地址 [cite: 127]
+const USER_X = "120.798321"; // 经度 X [cite: 127]
+const USER_Y = "31.275254"; // 纬度 Y [cite: 127]
+const USER_PROVINCE = "江苏省"; // 省份 [cite: 127]
+const USER_CITY = "苏州市"; // 城市 [cite: 128]
+const USER_COUNTRY = "中国"; // 国家 [cite: 128]
+const USER_LOCATION_DETAIL = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 详细地址 [cite: 127]
 
 // WiFi 信息 (请替换为您的抓包值)
 const USER_WIFI_LIST = [
@@ -38,7 +38,7 @@ const USER_WIFI_LIST = [
         "wifiMac": "48:2c:d0:2a:6e:31",
         "wifiName": "Huawei-Employee"
     }
-]; [cite_start]// [cite: 127]
+]; // [cite: 127]
 
 // ------------------------------------------------------------------
 // --- (2) 辅助函数 ---
@@ -111,18 +111,18 @@ async function loadAuthData() {
  */
 async function refreshAuthData(authData) {
     console.log("--- 2. 开始刷新 Token ---");
-    const refreshURL = 'https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg'; [cite_start]// [cite: 22]
+    const refreshURL = 'https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg'; // [cite: 22]
     const refreshBody = `refresh_token=${authData.refresh_token}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
     
     const req = new Request(refreshURL);
     req.method = 'POST';
     req.headers = {
-        [cite_start]'User-Agent': USER_AGENT, // [cite: 22]
-        [cite_start]'Content-Type': 'application/x-www-form-urlencoded', // [cite: 22]
-        [cite_start]'uuid': USER_DEVICE_ID, // [cite: 22]
-        [cite_start]'appVersion': '7.50.10', // [cite: 22]
-        [cite_start]'deviceName': 'iPhone15,3', // [cite: 22]
-        [cite_start]'osTarget': '1', // [cite: 22]
+        'User-Agent': USER_AGENT, // [cite: 22]
+        'Content-Type': 'application/x-www-form-urlencoded', // [cite: 22]
+        'uuid': USER_DEVICE_ID, // [cite: 22]
+        'appVersion': '7.50.10', // [cite: 22]
+        'deviceName': 'iPhone15,3', // [cite: 22]
+        'osTarget': '1', // [cite: 22]
         // 更多 Headers 字段...
     };
     req.body = refreshBody;
@@ -144,7 +144,7 @@ async function refreshAuthData(authData) {
             .find(s => s.startsWith('token='))
             .split('=')[1];
             
-        const newRefreshToken = responseData.refresh_token; [cite_start]// [cite: 4]
+        const newRefreshToken = responseData.refresh_token; // [cite: 4]
         
         if (newAccessToken && newRefreshToken) {
             // 更新并保存新的 Token
@@ -156,7 +156,7 @@ async function refreshAuthData(authData) {
             // 详细日志输出新获取的 Token
             console.log("✔️ Token 刷新成功并已保存。");
             console.log(`   新 Access Token (Cookie): ${newAccessToken.substring(0, 10)}...`);
-            console.log(`   新 Refresh Token: ${newRefreshToken.substring(0, 30)}...`); [cite_start]// [cite: 4]
+            console.log(`   新 Refresh Token: ${newRefreshToken.substring(0, 30)}...`); // [cite: 4]
             
             return true;
         } else {
@@ -181,24 +181,24 @@ async function refreshAuthData(authData) {
  */
 async function checkin(authData) {
     console.log("--- 3. 开始执行打卡 ---");
-    const checkinURL = 'https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront'; [cite_start]// [cite: 126]
+    const checkinURL = 'https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront'; // [cite: 126]
     
     // 构造请求体 (Request Body)
     const checkinBody = {
-        [cite_start]"employeeNumber": USER_EMPLOYEE_NUMBER, // [cite: 127]
-        [cite_start]"x": USER_X, // 经度 [cite: 127]
-        [cite_start]"wifiList": USER_WIFI_LIST, // Wi-Fi 信息 [cite: 127]
-        [cite_start]"meapip": USER_MEAPIP, // [cite: 127]
-        [cite_start]"y": USER_Y, // 纬度 [cite: 127]
-        [cite_start]"province": USER_PROVINCE, // 省份 [cite: 127]
-        [cite_start]"deviceId": USER_DEVICE_ID, // [cite: 127]
+        "employeeNumber": USER_EMPLOYEE_NUMBER, // [cite: 127]
+        "x": USER_X, // 经度 [cite: 127]
+        "wifiList": USER_WIFI_LIST, // Wi-Fi 信息 [cite: 127]
+        "meapip": USER_MEAPIP, // [cite: 127]
+        "y": USER_Y, // 纬度 [cite: 127]
+        "province": USER_PROVINCE, // 省份 [cite: 127]
+        "deviceId": USER_DEVICE_ID, // [cite: 127]
         "locale": "cn",
         "deviceType": "2",
         "verticalAccuracy": "0",
-        [cite_start]"location": USER_LOCATION_DETAIL, // 详细地址 [cite: 127]
-        [cite_start]"ip": USER_IP, // [cite: 127]
-        [cite_start]"city": USER_CITY, // 城市 [cite: 128]
-        [cite_start]"country": USER_COUNTRY // [cite: 128]
+        "location": USER_LOCATION_DETAIL, // 详细地址 [cite: 127]
+        "ip": USER_IP, // [cite: 127]
+        "city": USER_CITY, // 城市 [cite: 128]
+        "country": USER_COUNTRY // [cite: 128]
     };
     
     // 详细日志输出打卡信息
@@ -209,12 +209,12 @@ async function checkin(authData) {
     const req = new Request(checkinURL);
     req.method = 'POST';
     req.headers = {
-        [cite_start]'User-Agent': USER_AGENT, // [cite: 126]
-        [cite_start]'Content-Type': 'application/json', // [cite: 127]
-        [cite_start]'uuid': USER_DEVICE_ID, // [cite: 127]
-        [cite_start]'appVersion': '7.50.10', // [cite: 127]
-        [cite_start]'deviceName': 'iPhone15,3', // [cite: 127]
-        [cite_start]'osTarget': '1', // [cite: 127]
+        'User-Agent': USER_AGENT, // [cite: 126]
+        'Content-Type': 'application/json', // [cite: 127]
+        'uuid': USER_DEVICE_ID, // [cite: 127]
+        'appVersion': '7.50.10', // [cite: 127]
+        'deviceName': 'iPhone15,3', // [cite: 127]
+        'osTarget': '1', // [cite: 127]
         // 使用新获取的 access_token 作为 Cookie
         'Cookie': `token=${authData.access_token}`,
         // 更多 Headers 字段...
@@ -233,10 +233,10 @@ async function checkin(authData) {
         }
 
         // **错误处理增强: 2. 检查响应体内的 status 字段**
-        [cite_start]if (response.status === "1") { // [cite: 130] 成功状态
-            const successMsg = response.msg || `打卡成功 (${response.data.location})`; [cite_start]// [cite: 130]
+        if (response.status === "1") { // [cite: 130] 成功状态
+            const successMsg = response.msg || `打卡成功 (${response.data.location})`; // [cite: 130]
             console.log(`✔️ 打卡成功: ${successMsg}`);
-            await notify("打卡成功", `位置: ${response.data.location}`, false); [cite_start]// [cite: 130]
+            await notify("打卡成功", `位置: ${response.data.location}`, false); // [cite: 130]
             return successMsg;
         } else {
             // status 不为 "1" 即视为失败，**杜绝一切漏打卡的可能性**
