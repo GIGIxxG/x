@@ -116,7 +116,7 @@ function parseSetCookie(cookieHeader, currentAuth) {
  * @returns {Promise<boolean>} - 刷新成功返回 true，否则返回 false。
  */
 async function refreshAuthData(auth) {
-    const refreshURL = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; [cite_start]// [cite: 86]
+    const refreshURL = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; // [cite: 86]
     let req = new Request(refreshURL);
     req.method = "POST";
     
@@ -198,7 +198,7 @@ async function refreshAuthData(auth) {
  * @returns {Promise<string>} - 返回打卡结果信息。
  */
 async function checkin(auth) {
-    const checkinURL = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; [cite_start]// [cite: 1]
+    const checkinURL = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [cite: 1]
     let req = new Request(checkinURL);
     req.method = "POST";
 
@@ -208,7 +208,7 @@ async function checkin(auth) {
         "lang": "zh",
         "User-Agent": USER_AGENT,
         "Cookie": cookie,
-        [cite_start]"x-wlk-gray": "0", // [cite: 2]
+        "x-wlk-gray": "0", // [cite: 2]
         "uuid": USER_DEVICE_ID,
         "X-Product-Type": "0",
         "appVersion": "7.50.10",
@@ -234,7 +234,7 @@ async function checkin(auth) {
         "location" : OFFICE_LOCATION,
         "ip" : USER_IP,
         "city" : OFFICE_CITY,
-        [cite_start]"country" : "中国" // [cite: 3]
+        "country" : "中国" // [cite: 3]
     };
     req.body = JSON.stringify(body);
 
@@ -247,9 +247,9 @@ async function checkin(auth) {
         
         const response = await req.loadJSON();
 
-        [cite_start]if (response && response.status === "1" && response.msg === "打卡成功") { // [cite: 4]
+        if (response && response.status === "1" && response.msg === "打卡成功") { // [cite: 4]
             console.log("🎉 打卡成功！");
-            return `打卡成功: ${response.msg} (${response.data.location}) [${response.data.sysDate}]`; [cite_start]// [cite: 4]
+            return `打卡成功: ${response.msg} (${response.data.location}) [${response.data.sysDate}]`; // [cite: 4]
         } else {
             const errorMsg = response.msg || `状态码: ${req.response.statusCode}, 响应: ${JSON.stringify(response)}`;
             console.error(`❌ 打卡失败: ${errorMsg}`);
