@@ -123,7 +123,20 @@ async function refreshAuthData(authData) {
         'appVersion': '7.50.10', // [cite: 22]
         'deviceName': 'iPhone15,3', // [cite: 22]
         'osTarget': '1', // [cite: 22]
-        // 更多 Headers 字段...
+        'lang': 'zh', // [cite: 9]
+        'traceId': 'WK-A3D2F74B-4C24-4D24-BB47-D7D19F2C167A', // [cite: 11]
+        'nflag': '1', // [cite: 12]
+        'deviceType': '0', // [cite: 13]
+        'X-Product-Type': '0', // [cite: 15]
+        'appName': 'WeLink', // [cite: 20]
+        'Connection': 'keep-alive', // [cite: 21]
+        'buildCode': '703', // [cite: 22]
+        'Accept-Language': 'en-US;q=1, zh-Hans-US;q=0.9', // [cite: 23]
+        'X-Cloud-Type': '1', // [cite: 24]
+        'businessVersionCode': '703', // [cite: 25]
+        'networkType': 'Cellular', // [cite: 26]
+        'Accept': '*/*', // [cite: 27]
+        'Accept-Encoding': 'gzip, deflate, br' // [cite: 29]
     };
     req.body = refreshBody;
 
@@ -138,13 +151,41 @@ async function refreshAuthData(authData) {
             return false;
         }
 
-        const newAccessToken = req.response.headers['Set-Cookie']
-            .split(';')
-            .map(s => s.trim())
-            .find(s => s.startsWith('token='))
-            .split('=')[1];
+        // 调试：输出响应头信息
+        console.log("🔍 调试信息 - 响应头:");
+        console.log(`   Status Code: ${req.response.statusCode}`);
+        console.log(`   Headers: ${JSON.stringify(req.response.headers, null, 2)}`);
+
+        // 修复Cookie解析逻辑 - 处理多个Set-Cookie头
+        let newAccessToken = null;
+        const setCookieHeaders = req.response.headers['Set-Cookie'];
+        
+        if (setCookieHeaders) {
+            // Set-Cookie可能是一个数组或字符串
+            const cookieHeaders = Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders];
+            
+            console.log(`🔍 找到 ${cookieHeaders.length} 个 Set-Cookie 头`);
+            
+            for (const cookieHeader of cookieHeaders) {
+                console.log(`   Cookie: ${cookieHeader}`);
+                if (cookieHeader && cookieHeader.includes('token=')) {
+                    // 提取token值
+                    const tokenMatch = cookieHeader.match(/token=([^;]+)/);
+                    if (tokenMatch) {
+                        newAccessToken = tokenMatch[1];
+                        console.log(`   ✅ 找到 Access Token: ${newAccessToken.substring(0, 10)}...`);
+                        break;
+                    }
+                }
+            }
+        } else {
+            console.log("❌ 响应中没有 Set-Cookie 头");
+        }
             
         const newRefreshToken = responseData.refresh_token; // [cite: 4]
+        
+        // 调试：输出refresh_token信息
+        console.log(`🔍 Refresh Token: ${newRefreshToken ? newRefreshToken.substring(0, 30) + '...' : '未找到'}`);
         
         if (newAccessToken && newRefreshToken) {
             // 更新并保存新的 Token
