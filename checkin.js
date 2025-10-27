@@ -11,35 +11,35 @@ const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
 
 // --- 仅需抓取一次的静态/初始配置 ---
 // [!] 关键修正:
-// 此 Token (qWTB...) 来自 login.txt 的响应体
-// 并且在 refresh.txt 的请求体 中被使用，
+// 此 Token (qWTB...) 来自 login.txt 的响应体 
+// 并且在 refresh.txt 的请求体 中被使用 ，
 // 证明了它可以和下面的 tenantid 成功配对。
 const INITIAL_REFRESH_TOKEN = "qWTB3obvCBSlW9HdMkONzQ==9lZfJZYNBixj+6sFORKyfiVM0nHJzR3qaQFic4W9snIfmHTLeAANWIXC36xQL/+/4UQzMeNhe7v6a348NOX3vGjIRaYnn/uo80mEcq/xaZ9V3+MiQW1J5B9s8jhHLFCJgQTaQ2K5qpAJA+J3IC9mSm/5scDLT6l+D2UhdE9sRZAxcoWxpbpM8v0bvdHqVtdRWLeWqzRxqYiSPScNZuCqvDb7XKBq1or94gi/RTqfsR2Z3SrslOCPoe/zTCp6z0FgmCZk1m5KKtU3Tao09C40QYJlIxOLfhgUJtiFibNr+66U";
 
-// 此 tenantid (nT8N...) 来自 refresh.txt 的请求体
-const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; //
+// 此 tenantid (nT8N...) 来自 refresh.txt 的请求体 
+const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; // 
 
 // --- 打卡地理位置/设备信息配置 (来自 all.txt Request Body/Headers) ---
-const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId'
-const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber'
-const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent'
-const USER_APP_VERSION = "7.50.10"; //
-const USER_BUILD_CODE = "703"; //
+const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId' [cite: 1]
+const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber' [cite: 1]
+const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent' [cite: 1]
+const USER_APP_VERSION = "7.50.10"; // [cite: 1, 86]
+const USER_BUILD_CODE = "703"; // [cite: 1, 86]
 
 // 伪造的IP信息 (请替换为您的抓包值)
-const USER_IP = "10.245.32.114"; // 'ip'
-const USER_MEAPIP = "198.18.129.164"; // 'meapip'
+const USER_IP = "10.245.32.114"; // 'ip' [cite: 1]
+const USER_MEAPIP = "198.18.129.164"; // 'meapip' [cite: 1]
 
 // 地理位置信息 (请替换为您的抓包值)
-const OFFICE_LOC_X = "120.798321"; // 'x' 经度
-const OFFICE_LOC_Y = "31.275254"; // 'y' 纬度
-const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 'location'
-const OFFICE_PROVINCE = "江苏省"; // 'province'
-const OFFICE_CITY = "苏州市"; // 'city'
+const OFFICE_LOC_X = "120.798321"; // 'x' 经度 [cite: 1]
+const OFFICE_LOC_Y = "31.275254"; // 'y' 纬度 [cite: 1]
+const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 'location' [cite: 1]
+const OFFICE_PROVINCE = "江苏省"; // 'province' [cite: 1]
+const OFFICE_CITY = "苏州市"; // 'city' [cite: 1]
 
 // WiFi信息 (请替换为您的抓包值)
-const WIFI_MAC = "48:2c:d0:2a:6e:31"; // wifiList[0].wifiMac
-const WIFI_NAME = "Huawei-Employee"; // wifiList[0].wifiName
+const WIFI_MAC = "48:2c:d0:2a:6e:31"; // wifiList[0].wifiMac [cite: 1]
+const WIFI_NAME = "Huawei-Employee"; // wifiList[0].wifiName [cite: 1]
 
 // ------------------------------------------------------------------
 // --- (2) 核心函数实现 ---
@@ -130,22 +130,22 @@ async function refreshAuthData(auth) {
     let req = new Request(refreshURL);
     req.method = "POST";
     
-    // --- [!] 关键修复 (v2.7): 补全所有在 refresh.txt 中出现的 Headers ---
+    // --- [!] 关键修复 (v2.7): 补全所有在 refresh.txt  中出现的 Headers ---
     req.headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "lang": "zh",
         "User-Agent": USER_AGENT,
         "uuid": USER_DEVICE_ID,
-        "nflag": "1", //
-        "deviceType": "0", //
-        "deviceName": "iPhone15,3", //
-        "X-Product-Type": "0", //
-        "appVersion": USER_APP_VERSION, //
-        "osTarget": "1", //
-        "appName": "WeLink", //
-        "buildCode": USER_BUILD_CODE, //
-        "X-Cloud-Type": "1", //
-        "businessVersionCode": USER_BUILD_CODE //
+        "nflag": "1", // 
+        "deviceType": "0", // 
+        "deviceName": "iPhone15,3", // 
+        "X-Product-Type": "0", // 
+        "appVersion": USER_APP_VERSION, // 
+        "osTarget": "1", // 
+        "appName": "WeLink", // 
+        "buildCode": USER_BUILD_CODE, // 
+        "X-Cloud-Type": "1", // 
+        "businessVersionCode": USER_BUILD_CODE // 
     };
     // --- [!] 修复结束 ---
 
@@ -222,4 +222,102 @@ async function refreshAuthData(auth) {
 
 /**
  * 执行打卡操作。
- * @param {AuthData} auth - 包含最新 token
+ * @param {AuthData} auth - 包含最新 token 和 cookie 的认证数据。
+ * @returns {Promise<string>} - 返回打卡结果信息。
+ */
+async function checkin(auth) {
+    const checkinURL = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [cite: 1]
+    let req = new Request(checkinURL);
+    req.method = "POST";
+
+    const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token};`;
+
+    // 这些 Headers 来自 all.txt [cite: 1]
+    req.headers = {
+        "lang": "zh",
+        "User-Agent": USER_AGENT,
+        "Cookie": cookie,
+        "x-wlk-gray": "0", // [cite: 1]
+        "uuid": USER_DEVICE_ID,
+        "X-Product-Type": "0",
+        "appVersion": USER_APP_VERSION,
+        "Content-Type": "application/json"
+    };
+
+    const body = {
+        "employeeNumber" : USER_EMPLOYEE_NUMBER,
+        "x" : OFFICE_LOC_X,
+        "wifiList" : [
+            {
+              "wifiMac" : WIFI_MAC,
+              "wifiName" : WIFI_NAME
+            }
+        ],
+        "meapip" : USER_MEAPIP,
+        "y" : OFFICE_LOC_Y,
+        "province" : OFFICE_PROVINCE,
+        "deviceId" : USER_DEVICE_ID,
+        "locale" : "cn",
+        "deviceType" : "2",
+        "verticalAccuracy" : "0",
+        "location" : OFFICE_LOCATION,
+        "ip" : USER_IP,
+        "city" : OFFICE_CITY,
+        "country" : "中国" //
+    };
+    req.body = JSON.stringify(body);
+
+    try {
+        console.log("--- 准备打卡 ---");
+        console.log(`ℹ️ 打卡位置: ${body.location}`);
+        console.log(`ℹ️ WiFi: ${body.wifiList[0].wifiName} (${body.wifiList[0].wifiMac})`);
+        console.log(`ℹ️ 坐标: (x: ${body.x}, y: ${body.y})`);
+        console.log("🚀 正在执行打卡请求...");
+        
+        const response = await req.loadJSON();
+
+        if (response && response.status === "1" && response.msg === "打卡成功") { // [cite: 4]
+            console.log("🎉 打卡成功！");
+            return `打卡成功: ${response.msg} (${response.data.location}) [${response.data.sysDate}]`; // [cite: 4]
+        } else {
+            const errorMsg = response.msg || `状态码: ${req.response.statusCode}, 响应: ${JSON.stringify(response)}`;
+            console.error(`❌ 打卡失败: ${errorMsg}`);
+            return `打卡失败: ${errorMsg}`;
+        }
+    } catch (e) {
+        console.error("❌ 打卡请求异常:", e);
+        return `打卡请求失败: ${e.message}`;
+    }
+}
+
+// ------------------------------------------------------------------
+// --- (3) 主程序 ---
+// ------------------------------------------------------------------
+
+async function main() {
+    console.log("=== WeLink 自动打卡脚本开始执行 ===");
+    
+    const authData = await loadAuthData();
+    const refreshSuccess = await refreshAuthData(authData);
+    
+    let result = "";
+
+    if (refreshSuccess) {
+        result = await checkin(authData);
+    } else {
+        result = "Token 刷新失败，无法执行打卡。请检查配置或 Keychain。";
+    }
+
+    console.log("=== 脚本执行完毕 ===");
+    
+    const isSuccess = result.startsWith("打卡成功");
+    const notificationTitle = isSuccess ? "✅ WeLink 打卡成功" : "❌ WeLink 打卡失败";
+
+	const n = new Notification();
+	n.title = notificationTitle;
+	n.body = result;
+	n.sound = "default";
+	await n.schedule();
+}
+
+await main();
