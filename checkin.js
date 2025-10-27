@@ -322,13 +322,11 @@ async function main() {
     //     await notification.schedule();
     // }
 
-    // 修改后的代码:
-    let notification = new Notification();
-    notification.title = notificationTitle;
-    notification.body = result;
-    await notification.schedule(); // 始终发送横幅通知
-    
-    Script.complete();
+	const n = new Notification();
+	n.title = notificationTitle;
+	n.body = result;
+	n.sound = "default";
+	await n.schedule(); // 自动结束脚本，无需 Script.complete()
 }
 
 await main();
