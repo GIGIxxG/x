@@ -1,223 +1,231 @@
-// Scriptable Script for WeLink Auto Check-in
+// Scriptable 脚本 for WeLink 自动打卡
+// 功能: 自动刷新用户Token, 并自动执行打卡。
 //
 // ------------------------------------------------------------------
-// ⚠️ --- (1) 用户配置 (必须填写!) --- ⚠️
-// 您必须用您自己的信息更新以下值。
+// ⚠️ --- (1) 用户配置 (必须更新为您自己的信息!) --- ⚠️
 // ------------------------------------------------------------------
 
-// --- 来自 refresh.txt [来源 88] (Response Body) ---
-// 粘贴您抓取到的 *最新* 的 refresh_token 值
-// 这是脚本的“启动种子”，它只在第一次运行时使用。
+// Keychain Key，用于保存和读取最新的 Auth Data
+const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
+
+// --- 仅需抓取一次的静态/初始配置 ---
+// 粘贴您抓取到的 *初始* 的 refresh_token 值 (来自 refresh.txt Response Body)
 // 脚本会自动更新这个值。
-const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T";
+const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T"; // [cite: 1]
 
-// --- 来自 refresh.txt [来源 86] (Request Body) ---
-// 粘贴 refresh.txt 请求体中的 `tenantid=...` 的值
-// !! 注意：只粘贴 `&` 和 `tenantid=` 之间的部分
-const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2BBv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l";
+// 粘贴 refresh.txt Request Body 中 `tenantid=...` 的值 (注意：是完整的URL编码后的值)
+const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2BBv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; // 
 
-// --- 来自 all.txt (checkin 请求) [来源 2, 3] ---
-const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid'
-const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91";
-const USER_IP = "10.245.32.114"; // 似乎是硬编码
-const USER_MEAPIP = "198.18.129.164"; // 似乎是硬编码
+// --- 打卡地理位置/设备信息配置 (来自 all.txt Request Body/Headers) ---
+// **注意：所有值都应该替换为您自己抓取到的数据！**
 
-// --- (来自 checkin req body [来源 3]) ---
-const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)";
-const OFFICE_CITY = "苏州市";
-const OFFICE_PROVINCE = "江苏省";
-const OFFICE_COUNTRY = "中国";
+const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId' [cite: 25, 26]
+const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber' [cite: 26]
+const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent' [cite: 25]
 
+// 伪造的IP信息 (请替换为您的抓包值)
+const USER_IP = "10.245.32.114"; // 'ip' [cite: 27]
+const USER_MEAPIP = "198.18.129.164"; // 'meapip' [cite: 26]
 
-// ------------------------------------------------------------------
-// (2) 脚本逻辑 (通常不需要修改)
-// ------------------------------------------------------------------
+// 地理位置信息 (请替换为您的抓包值)
+const OFFICE_LOC_X = "120.798321"; // 'x' 经度 [cite: 26]
+const OFFICE_LOC_Y = "31.275254"; // 'y' 纬度 [cite: 26]
+const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 'location' [cite: 27]
+const OFFICE_PROVINCE = "江苏省"; // 'province' [cite: 26]
+const OFFICE_CITY = "苏州市"; // 'city' [cite: 27]
 
-// --- 文件管理器，用于存储 refresh_token ---
-const fm = FileManager.local();
-const scriptDir = fm.documentsDirectory();
-const tokenFilePath = fm.joinPath(scriptDir, "welink_refresh_token.txt");
-
-let alertTitle = "打卡失败";
-let alertMessage = "发生未知错误。";
-
-try {
-	// --- 1. 加载 Refresh Token ---
-    console.log("正在加载 Refresh Token...");
-    let currentRefreshToken;
-    let tokenLoadedFromFile = false; // 标记是否从文件加载
-    if (fm.fileExists(tokenFilePath)) {
-        currentRefreshToken = fm.readString(tokenFilePath);
-        tokenLoadedFromFile = true;
-        console.log("从文件加载 Token 成功。");
-    } else {
-        currentRefreshToken = INITIAL_REFRESH_TOKEN;
-        console.log("使用初始 Token。");
-    }
-
-    // --- 2. 执行 Token 刷新 (增加错误处理) ---
-    console.log("正在刷新 Token...");
-    let authData;
-    try {
-        authData = await fetchNewTokens(currentRefreshToken);
-    } catch (e) {
-        // 检查是否是 URIError 并且 token 是从文件加载的
-        if (e.name === "URIError" && tokenLoadedFromFile) {
-            console.warn("文件中的 Token 似乎已损坏。正在删除并使用初始 Token 重试...");
-            // 删除损坏的文件
-            fm.remove(tokenFilePath); 
-            // 使用初始 Token 重试 
-            currentRefreshToken = INITIAL_REFRESH_TOKEN;
-            authData = await fetchNewTokens(currentRefreshToken);
-        } else {
-            // 重新抛出其他错误 (例如网络错误)
-            throw e; 
-        }
-    }
-    
-    // --- 3. 保存新的 Refresh Token ---
-    fm.writeString(tokenFilePath, authData.newRefreshToken);
-    console.log("新的 Refresh Token 已保存。");
-
-    // --- 4. 获取动态数据 (GPS 和 WiFi) ---
-	console.log("正在获取当前位置...");
-    Location.setAccuracyToBest();
-    const location = await Location.current();
-    const locX = location.longitude.toString();
-    const locY = location.latitude.toString();
-    
-    // --- 修复 WiFi API 调用 ---
-    console.log("正在获取 WiFi 详情...");
-    // 1. 正确调用 Device.wifi() 函数，它返回一个对象或 undefined
-    const wifiInfo = Device.wifi(); 
-    
-    // 2. 检查 wifiInfo 是否存在。如果不存在 (如使用蜂窝网络)，则使用抓包的默认值 
-    const wifiName = (wifiInfo && wifiInfo.ssid) ? wifiInfo.ssid : "Huawei-Employee";
-    const wifiMac = (wifiInfo && wifiInfo.bssid) ? wifiInfo.bssid : "48:2c:d0:2a:6e:31";
-
-    // --- 5. 执行打卡 ---
-    console.log("正在发送打卡请求...");
-    const checkinResponse = await fetchCheckin(authData, { locX, locY, wifiName, wifiMac });
-
-    // --- 6. 处理打卡响应 ---
-    console.log("收到打卡响应:");
-    console.log(checkinResponse);
-    if (checkinResponse.status === "1" && checkinResponse.msg === "打卡成功") {
-        alertTitle = "打卡成功";
-        alertMessage = `时间: ${checkinResponse.data.sysDate}\n地点: ${checkinResponse.data.location}`;
-    } else {
-        alertTitle = "打卡失败";
-        alertMessage = checkinResponse.msg || "服务器返回错误。";
-    }
-
-} catch (e) {
-    console.error(e);
-    alertMessage = e.toString();
-}
-
-// --- 7. 显示最终结果 ---
-let alert = new Alert();
-alert.title = alertTitle;
-alert.message = alertMessage;
-alert.addAction("OK");
-await alert.present();
-
-Script.complete();
-
+// WiFi信息 (请替换为您的抓包值)
+const WIFI_MAC = "48:2c:d0:2a:6e:31"; // wifiList[0].wifiMac [cite: 26]
+const WIFI_NAME = "Huawei-Employee"; // wifiList[0].wifiName [cite: 26]
 
 // ------------------------------------------------------------------
-// 辅助函数
+// --- (2) 核心函数实现 ---
 // ------------------------------------------------------------------
 
 /**
- * [步骤1] 刷新 Token
- * (基于 refresh.txt [来源 1, 2, 3])
- *  * !! 已修复错误并优化 Cookie 解析 !!
- */
-async function fetchNewTokens(refreshToken) {
-    const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; // [cite: 1]
-    let req = new Request(url);
-    req.method = "POST";
-    
-    // 设置 Headers [来源 1]
-    req.headers = {
-        "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
-        "uuid": USER_DEVICE_ID,
-        "Content-Type": "application/x-www-form-urlencoded" // [cite: 1]
-    };
-    
-    // 设置 Body [来源 1]
-    req.body = `refresh_token=${encodeURIComponent(refreshToken)}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
-
-    // --- 修复点 1 ---
-    // 发送请求并直接解析 JSON 响应
-    // req.loadJSON() 会自动处理 JSON.parse()
-    const responseBody = await req.loadJSON(); // 
-    
-    // --- 修复点 2 (优化) ---
-    // 从 req.response.cookies 数组中安全地解析 Cookies 
-    const cookies = req.response.cookies;
-    if (!cookies || cookies.length === 0) {
-        throw new Error("刷新失败：未在响应中找到 Cookies。");
-    }
-
-    // 将 cookie 数组转换为一个易于查找的 Map
-    const cookieMap = new Map();
-    for (const cookie of cookies) {
-        cookieMap.set(cookie.name, cookie.value);
-    }
-    
-    const token = cookieMap.get("token");
-    const cdnToken = cookieMap.get("cdn_token");
-    const hwafSESID = cookieMap.get("HWWAFSESID");
-    const hwafSESTIME = cookieMap.get("HWWAFSESTIME");
-    
-    // 从 Body 中解析新的 refresh_token
-    const newRefreshToken = responseBody.refresh_token;
-
-    if (!token || !cdnToken || !hwafSESID || !hwafSESTIME || !newRefreshToken) {
-        console.error("Cookie 或 Token 解析不完整:", cookieMap, responseBody);
-        throw new Error("Token 刷新失败: " + (responseBody.msg || "无法解析所有必需的 Cookie 或 refresh_token"));
-    }
-    
-    return { token, cdnToken, hwafSESID, hwafSESTIME, newRefreshToken };
-}
-
-/**
- * [步骤2] 执行打卡
- * (基于 all.txt [来源 1, 2, 3, 4, 5])
+ * 封装 Auth Data 结构
+ * @typedef {object} AuthData
+ * @property {string} refreshToken - 用于刷新Token
+ * @property {string} cdnToken - 从 Set-Cookie 中提取
+ * @property {string} token - 从 Set-Cookie 中提取的 Access Token
+ * @property {string} hwafSESID - 从 Set-Cookie 中提取
+ * @property {string} hwafSESTIME - 从 Set-Cookie 中提取
  */
-async function fetchCheckin(auth, dynamicData) {
-    const url = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [来源 1]
-    let req = new Request(url);
+
+/**
+ * 从 Keychain 加载保存的认证数据，如果不存在则使用初始值。
+ * @returns {Promise<AuthData>}
+ */
+async function loadAuthData() {
+    try {
+        const jsonString = Keychain.get(KEYCHAIN_KEY);
+        if (jsonString) {
+            const auth = JSON.parse(jsonString);
+            console.log("✅ 成功加载 Keychain 中的认证数据。");
+            return auth;
+        }
+    } catch (e) {
+        console.error("加载 Keychain 数据失败:", e);
+    }
+
+    // 首次运行或加载失败时，使用初始配置
+    console.log("⚠️ 首次运行或加载失败，使用初始 REFRESH_TOKEN。");
+    return {
+        refreshToken: INITIAL_REFRESH_TOKEN,
+        cdnToken: "",
+        token: "",
+        hwafSESID: "",
+        hwafSESTIME: ""
+    };
+}
+
+/**
+ * 将认证数据保存到 Keychain。
+ * @param {AuthData} auth - 要保存的认证数据。
+ */
+function saveAuthData(auth) {
+    try {
+        Keychain.set(KEYCHAIN_KEY, JSON.stringify(auth));
+        console.log("✅ 认证数据已成功保存到 Keychain。");
+    } catch (e) {
+        console.error("保存 Keychain 数据失败:", e);
+    }
+}
+
+/**
+ * 解析 Set-Cookie 头部，提取关键的 token 和 cdn_token。
+ * @param {string} cookieHeader - 完整的 Set-Cookie 字符串
+ * @param {AuthData} currentAuth - 当前认证数据对象
+ * @returns {void}
+ */
+function parseSetCookie(cookieHeader, currentAuth) {
+    const cookies = cookieHeader.split(', ');
+
+    // 正则表达式匹配 key=value; 形式
+    const cdnMatch = cookies.find(c => c.startsWith('cdn_token='))?.match(/cdn_token=([^;]+)/);
+    const tokenMatch = cookies.find(c => c.startsWith('token='))?.match(/token=([^;]+)/);
+    const hwsidMatch = cookies.find(c => c.startsWith('HWWAFSESID='))?.match(/HWWAFSESID=([^;]+)/);
+    const hwtimeMatch = cookies.find(c => c.startsWith('HWWAFSESTIME='))?.match(/HWWAFSESTIME=([^;]+)/);
+
+    if (cdnMatch) {
+        currentAuth.cdnToken = cdnMatch[1].split(';')[0]; // 
+        console.log("💡 更新 cdnToken");
+    }
+    if (tokenMatch) {
+        currentAuth.token = tokenMatch[1].split(';')[0]; // 
+        console.log("💡 更新 token (Access Token)");
+    }
+    if (hwsidMatch) {
+        currentAuth.hwafSESID = hwsidMatch[1].split(';')[0]; // 
+        console.log("💡 更新 HWWAFSESID");
+    }
+    if (hwtimeMatch) {
+        currentAuth.hwafSESTIME = hwtimeMatch[1].split(';')[0]; // 
+        console.log("💡 更新 HWWAFSESTIME");
+    }
+}
+
+
+/**
+ * 使用 refresh_token 获取新的 token 和 refresh_token。
+ * @param {AuthData} auth - 当前认证数据。
+ * @returns {Promise<boolean>} - 刷新成功返回 true，否则返回 false。
+ */
+async function refreshAuthData(auth) {
+    const refreshURL = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg"; // 
+    let req = new Request(refreshURL);
     req.method = "POST";
     
-    // 构建完整的 Cookie
-    const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token}`;
-    
-    // 设置 Headers [来源 1, 2]
+    // Header 配置 
+    req.headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": USER_AGENT,
+        "uuid": USER_DEVICE_ID,
+        "lang": "zh"
+    };
+
+    // Body 配置，注意 refresh_token 需要进行 URI 编码 
+    const encodedRefreshToken = encodeURIComponent(auth.refreshToken);
+    req.body = `refresh_token=${encodedRefreshToken}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
+
+    try {
+        console.log("🚀 正在执行 Token 刷新请求...");
+        const response = await req.loadJSON();
+
+        if (req.response.statusCode !== 200) {
+            console.error(`❌ Token 刷新失败，状态码: ${req.response.statusCode}`);
+            return false;
+        }
+
+        // 1. 提取新的 refresh_token (来自 Response Body) 
+        if (response && response.refresh_token) {
+            auth.refreshToken = response.refresh_token;
+            console.log("✅ 成功获取并更新新的 refresh_token。");
+        } else {
+            console.warn("⚠️ 警告: Response Body 中未找到新的 refresh_token。");
+        }
+        
+        // 2. 提取新的 Access Token 和 cdn_token (来自 Set-Cookie Header) 
+        const setCookieHeader = req.response.headers["Set-Cookie"];
+        if (setCookieHeader) {
+            parseSetCookie(setCookieHeader, auth);
+            // 确保获得了 token 和 cdn_token
+            if (!auth.token || !auth.cdnToken) {
+                console.error("❌ Token 刷新成功，但未从 Set-Cookie 中提取到关键的 token/cdn_token！");
+                return false;
+            }
+        } else {
+            console.error("❌ Token 刷新成功，但 Response 中缺少 Set-Cookie Header！");
+            return false;
+        }
+
+        saveAuthData(auth);
+        return true;
+    } catch (e) {
+        console.error("❌ Token 刷新请求异常:", e);
+        return false;
+    }
+}
+
+/**
+ * 执行打卡操作。
+ * @param {AuthData} auth - 包含最新 token 和 cookie 的认证数据。
+ * @returns {Promise<string>} - 返回打卡结果信息。
+ */
+async function checkin(auth) {
+    const checkinURL = "https://api.welink.huaweicloud.com/mcloud/mag/ProxyForText/mattend/service/mat/punchCardService/punchcardallFront"; // [cite: 25]
+    let req = new Request(checkinURL);
+    req.method = "POST";
+
+    // 构建完整的 Cookie 字符串 
+    // 注意：JSESSIONID 和 HttpOnly 的 Cookie 不会通过 Scriptable 自动保存，
+    // 因此这里只使用我们能获取到的关键 Cookie：cdn_token 和 token。
+    const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token};`;
+
+    // 设置 Headers [cite: 25]
     req.headers = {
         "lang": "zh",
-        "User-Agent": "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)",
+        "User-Agent": USER_AGENT,
         "Cookie": cookie,
         "x-wlk-gray": "0",
         "uuid": USER_DEVICE_ID,
-        "Content-Type": "application/json" // [来源 2]
-        // 其他 headers 似乎不是严格必需的
+        "X-Product-Type": "0", // 增加一些关键 Header
+        "appVersion": "7.50.10",
+        "Content-Type": "application/json"
     };
-    
-    // 设置 Body [来源 3]
+
+    // 设置 Body 
     const body = {
         "employeeNumber" : USER_EMPLOYEE_NUMBER,
-        "x" : dynamicData.locX, // 动态
+        "x" : OFFICE_LOC_X,
         "wifiList" : [
             {
-              "wifiMac" : dynamicData.wifiMac, // 动态
-              "wifiName" : dynamicData.wifiName // 动态
+              "wifiMac" : WIFI_MAC,
+              "wifiName" : WIFI_NAME
             }
         ],
         "meapip" : USER_MEAPIP,
-        "y" : dynamicData.locY, // 动态
+        "y" : OFFICE_LOC_Y,
         "province" : OFFICE_PROVINCE,
         "deviceId" : USER_DEVICE_ID,
         "locale" : "cn",
@@ -228,8 +236,62 @@ async function fetchCheckin(auth, dynamicData) {
         "city" : OFFICE_CITY,
         "country" : "中国"
     };
-    
     req.body = JSON.stringify(body);
-    
-    return await req.loadJSON(); // [来源 4, 5]
+
+    try {
+        console.log("🚀 正在执行打卡请求...");
+        const response = await req.loadJSON();
+
+        if (response && response.status === "1" && response.msg === "打卡成功") { // 
+            console.log("🎉 打卡成功！");
+            return `打卡成功: ${response.msg} (${response.data.location})`;
+        } else {
+            const errorMsg = response.msg || `状态码: ${req.response.statusCode}, 响应: ${JSON.stringify(response)}`;
+            console.error(`❌ 打卡失败: ${errorMsg}`);
+            return `打卡失败: ${errorMsg}`;
+        }
+    } catch (e) {
+        console.error("❌ 打卡请求异常:", e);
+        return `打卡请求失败: ${e.message}`;
+    }
 }
+
+// ------------------------------------------------------------------
+// --- (3) 主程序 ---
+// ------------------------------------------------------------------
+
+async function main() {
+    console.log("=== WeLink 自动打卡脚本开始执行 ===");
+    
+    // 1. 加载或初始化认证数据
+    const authData = await loadAuthData();
+    
+    // 2. 刷新 Token
+    const refreshSuccess = await refreshAuthData(authData);
+    
+    let result = "";
+
+    if (refreshSuccess) {
+        // 3. 执行打卡
+        result = await checkin(authData);
+    } else {
+        result = "Token 刷新失败，无法执行打卡。请检查配置或抓取新的 INITIAL_REFRESH_TOKEN。";
+    }
+
+    // 4. 结果通知
+    console.log("=== 脚本执行完毕 ===");
+    if (config.runsInApp) {
+        // 在 Scriptable 应用内运行时，显示通知
+        await new Alert().title("WeLink 自动打卡结果").message(result).present();
+    } else {
+        // 作为小组件或自动化定时任务运行时，发送通知
+        let notification = new Notification();
+        notification.title = "WeLink 自动打卡";
+        notification.body = result;
+        await notification.schedule();
+    }
+    
+    Script.complete();
+}
+
+await main();
