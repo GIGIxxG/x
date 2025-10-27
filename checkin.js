@@ -12,7 +12,7 @@ const config = {
   province: "江苏省",
   city: "苏州市",
   country: "中国",
-  location: "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)",
+  location: "江苏省苏州市虎丘区江韵路华为苏州研究所(北门)",
   x: "120.798321",
   y: "31.275254",
   wifiList: [
