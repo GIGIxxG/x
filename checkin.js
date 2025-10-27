@@ -1,6 +1,6 @@
 // Scriptable 脚本 for WeLink 自动打卡
 // 功能: 自动刷新用户Token, 并自动执行打卡。
-// 版本: 2.1 (根据用户需求，始终使用横幅通知)
+// 版本: 2.2 (修正 INITIAL_REFRESH_TOKEN 并增强刷新逻辑)
 //
 // ------------------------------------------------------------------
 // ⚠️ --- (1) 用户配置 (必须更新为您自己的信息!) --- ⚠️
@@ -10,9 +10,10 @@
 const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
 
 // --- 仅需抓取一次的静态/初始配置 ---
-// 粘贴您抓取到的 *初始* 的 refresh_token 值 (来自 refresh.txt Response Body)
+// 粘贴您抓取到的 *初始* 的 refresh_token 值 (来自 login.txt Response Body)
 // 脚本会自动更新这个值。
-const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T"; // (来自 refresh.txt)
+// [!] 已为您修正此 Token
+const INITIAL_REFRESH_TOKEN = "qWTB3obvCBSlW9HdMkONzQ==9lZfJZYNBixj+6sFORKyfiVM0nHJzR3qaQFic4W9snIfmHTLeAANWIXC36xQL/+/4UQzMeNhe7v6a348NOX3vGjIRaYnn/uo80mEcq/xaZ9V3+MiQW1J5B9s8jhHLFCJgQTaQ2K5qpAJA+J3IC9mSm/5scDLT6l+D2UhdE9sRZAxcoWxpbpM8v0bvdHqVtdRWLeWqzRxqYiSPScNZuCqvDb7XKBq1or94gi/RTqfsR2Z3SrslOCPoe/zTCp6z0FgmCZk1m5KKtU3Tao09C40QYJlIxOLfhgUJtiFibNr+66U"; // (来自 login.txt 的 response body)
 
 // 粘贴 refresh.txt Request Body 中 `tenantid=...` 的值 (注意：是完整的URL编码后的值)
 const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; // (来自 refresh.txt)
@@ -153,7 +154,7 @@ async function refreshAuthData(auth) {
     
     // Header 配置
     req.headers = {
-        "Content-Type": "application/x-form-urlencoded",
+        "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": USER_AGENT,
         "uuid": USER_DEVICE_ID,
         "lang": "zh"
@@ -173,32 +174,41 @@ async function refreshAuthData(auth) {
             return false;
         }
 
-        // 1. 提取新的 refresh_token (来自 Response Body)
+        // [!] 优化点: 必须同时拿到 new refresh_token 和 new cookies
+        let gotNewRefreshToken = false;
         if (response && response.refresh_token) {
             auth.refreshToken = response.refresh_token;
             console.log(`✅ 成功获取并更新 new refresh_token: ${mask(auth.refreshToken)}`);
+            gotNewRefreshToken = true;
         } else {
             console.warn("⚠️ 警告: Response Body 中未找到新的 refresh_token。");
         }
         
-        // 2. 提取新的 Access Token 和 cdn_token (来自 Set-Cookie Header)
+        let gotNewCookies = false;
         const setCookieHeader = req.response.headers["Set-Cookie"];
         if (setCookieHeader) {
             parseSetCookie(setCookieHeader, auth);
-            // 确保获得了 token 和 cdn_token
-            if (!auth.token || !auth.cdnToken) {
-                console.error("❌ Token 刷新成功，但未从 Set-Cookie 中提取到关键的 token/cdn_token！");
-                return false;
+            // 确保关键 token 被更新
+            if (auth.token && auth.cdnToken) {
+                gotNewCookies = true;
+            } else {
+                console.warn("⚠️ 警告: Set-Cookie 中未找到关键的 token 或 cdn_token。");
             }
         } else {
-            console.error("❌ Token 刷新成功，但 Response 中缺少 Set-Cookie Header！");
+             console.warn("⚠️ 警告: Response Headers 中未找到 Set-Cookie。");
+        }
+
+        // 必须同时成功
+        if (gotNewRefreshToken && gotNewCookies) {
+            saveAuthData(auth);
+            return true;
+        } else {
+            console.error("❌ Token 刷新失败。未能在响应中同时获取 new refresh_token 和 Set-Cookie。");
             return false;
         }
 
-        saveAuthData(auth);
-        return true;
     } catch (e) {
-        console.error("❌ Token 刷新请求异常:", e);
+        console.error("❌ Token 刷新请求异常 (可能是JSON解析失败，说明返回了非预期的内容):", e);
         return false;
     }
 }
@@ -255,78 +265,15 @@ async function checkin(auth) {
     try {
         console.log("--- 准备打卡 ---");
         console.log(`ℹ️ 打卡位置: ${body.location}`);
-        console.log(`ℹ️ WiFi: ${body.wifiName} (${body.wifiMac})`);
+        // [!] 优化点: 修正WiFi日志
+        console.log(`ℹ️ WiFi: ${body.wifiList[0].wifiName} (${body.wifiList[0].wifiMac})`);
         console.log(`ℹ️ 坐标: (x: ${body.x}, y: ${body.y})`);
         console.log("🚀 正在执行打卡请求...");
         
         const response = await req.loadJSON();
 
-        //
         if (response && response.status === "1" && response.msg === "打卡成功") {
             console.log("🎉 打卡成功！");
             return `打卡成功: ${response.msg} (${response.data.location}) [${response.data.sysDate}]`;
         } else {
             const errorMsg = response.msg || `状态码: ${req.response.statusCode}, 响应: ${JSON.stringify(response)}`;
-            console.error(`❌ 打卡失败: ${errorMsg}`);
-            return `打卡失败: ${errorMsg}`;
-        }
-    } catch (e) {
-        console.error("❌ 打卡请求异常:", e);
-        return `打卡请求失败: ${e.message}`;
-    }
-}
-
-// ------------------------------------------------------------------
-// --- (3) 主程序 ---
-// ------------------------------------------------------------------
-
-async function main() {
-    console.log("=== WeLink 自动打卡脚本开始执行 ===");
-    
-    // 1. 加载或初始化认证数据
-    const authData = await loadAuthData();
-    
-    // 2. 刷新 Token
-    const refreshSuccess = await refreshAuthData(authData);
-    
-    let result = "";
-
-    if (refreshSuccess) {
-        // 3. 执行打卡
-        result = await checkin(authData);
-    } else {
-        result = "Token 刷新失败，无法执行打卡。请检查配置或抓取新的 INITIAL_REFRESH_TOKEN。";
-    }
-
-    // 4. 结果通知
-    console.log("=== 脚本执行完毕 ===");
-    
-    const isSuccess = result.startsWith("打卡成功");
-    const notificationTitle = isSuccess ? "✅ WeLink 打卡成功" : "❌ WeLink 打卡失败";
-
-    // ------------------------------------------------------------------
-    // --- [!] 修改点 ---
-    // ------------------------------------------------------------------
-    // 根据用户要求：移除 Alert (弹窗)，始终使用 Notification (横幅通知)。
-    
-    // 原来的代码:
-    // if (config.runsInApp) {
-    //     let alert = new Alert();
-    //     alert.title = notificationTitle;
-    //     alert.message = result;
-    //     await alert.present();
-    // } else {
-    //     let notification = new Notification();
-    //     notification.title = notificationTitle;
-    //     notification.body = result;
-    //     await notification.schedule();
-    // }
-
-	const n = new Notification();
-	n.title = notificationTitle;
-	n.body = result;
-	n.sound = "default";
-	await n.schedule(); // 自动结束脚本，无需 Script.complete()
-}
-
-await main();
