@@ -14,8 +14,8 @@ const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
 // 脚本会自动更新这个值。
 const INITIAL_REFRESH_TOKEN = "qWTB3obvCBSlW9HdMkONzQ==9lZfJZYNBixj+6sFORKyfiVM0nHJzR3qaQFic4W9snIfmHTLeAANWIXC36xQL/+/4UQzMeNhe7v6a348NOX3vGjIRaYnn/uo80mEcq/xaZ9V3+MiQW1J5B9s8jhHLFCJgQTaQ2K5qpAJA+J3IC9mSm/5scDLT6l+D2UhdE9sRZAxcoWxpbpM8v0bvdHqVtdRWLeWqzRxqYiSPScNZuCqvDb7XKBq1or94gi/RTqfsR2Z3SrslOCPoe/zTCp6z0FgmCZk1m5KKtU3Tao09C40QYJlIxOLfhgUJtiFibNr+66U"; // [cite: 1]
 
-// 粘贴 refresh.txt Request Body 中 `tenantid=...` 的值
-const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2BBv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl66EK6MWmooviS135GSXcEUm8W5WmluD/l"; // [cite: 1]
+// 粘贴 refresh.txt Response Body 中 `tenantIdentity` 的值（简单字符串）
+const STATIC_TENANT_ID = "ad802282b91"; // [cite: 1]
 
 // --- 打卡地理位置/设备信息配置 (来自 all.txt Request Body/Headers) ---
 const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId' [cite: 127]
@@ -112,7 +112,13 @@ async function loadAuthData() {
 async function refreshAuthData(authData) {
     console.log("--- 2. 开始刷新 Token ---");
     const refreshURL = 'https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg'; // [cite: 22]
-    const refreshBody = `refresh_token=${authData.refresh_token}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
+    const refreshBody = `refresh_token=${authData.refresh_token}&tenantid=${STATIC_TENANT_ID}&thirdAuthType=3`;
+    
+    // 调试：输出请求体信息
+    console.log("🔍 调试信息 - 请求体:");
+    console.log(`   Refresh Token: ${authData.refresh_token.substring(0, 30)}...`);
+    console.log(`   Tenant ID: ${STATIC_TENANT_ID}`);
+    console.log(`   Full Body: ${refreshBody.substring(0, 100)}...`);
     
     const req = new Request(refreshURL);
     req.method = 'POST';
