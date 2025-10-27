@@ -65,14 +65,15 @@ try {
         // 检查是否是 URIError 并且 token 是从文件加载的
         if (e.name === "URIError" && tokenLoadedFromFile) {
             console.warn("文件中的 Token 似乎已损坏。正在删除并使用初始 Token 重试...");
-            fm.remove(tokenFilePath); 
+            fm.remove(tokenFilePath); 
             currentRefreshToken = INITIAL_REFRESH_TOKEN;
             authData = await fetchNewTokens(currentRefreshToken);
         } else {
-            throw e; 
+            // 重新抛出其他错误 (例如网络错误)
+            throw e; 
         }
     }
-    
+    
     // --- 3. 保存新的 Refresh Token ---
     fm.writeString(tokenFilePath, authData.newRefreshToken);
     console.log("新的 Refresh Token 已保存。");
@@ -83,10 +84,9 @@ try {
     const location = await Location.current();
     const locX = location.longitude.toString();
     const locY = location.latitude.toString();
-    
+    
     // --- 步骤 4b: 设置 WiFi 详情 ---
     console.log("正在设置 WiFi 详情...");
-    // 使用抓包时的硬编码值，绕过 Scriptable 的 API 限制和 BSSID 缺失问题。
     const wifiName = "Huawei-Employee";
     const wifiMac = "48:2c:d0:2a:6e:31"; 
 
@@ -96,7 +96,7 @@ try {
 
     // --- 6. 处理打卡响应 ---
     console.log("收到打卡响应:");
-    console.log(checkinResponse);
+    console.log(JSON.stringify(checkinResponse)); // 确保对象被完整打印
     if (checkinResponse.status === "1" && checkinResponse.msg === "打卡成功") {
         alertTitle = "打卡成功";
         alertMessage = `时间: ${checkinResponse.data.sysDate}\n地点: ${checkinResponse.data.location}`;
@@ -127,12 +127,13 @@ Script.complete();
 /**
 * [步骤1] 刷新 Token
 * !! 最终修复 - 增加所有设备头部以完善会话状态 !!
+* !! 增加超详细日志 !!
 */
 async function fetchNewTokens(refreshToken) {
     const url = "https://api.welink.huaweicloud.com/mcloud/mag/v7/refresh/LoginReg";
     let req = new Request(url);
     req.method = "POST";
-    
+    
     // 确保 Refresh 请求头部信息完整，与 refresh.txt 严格一致
     req.headers = {
         "lang": "zh",
@@ -151,34 +152,74 @@ async function fetchNewTokens(refreshToken) {
         "networkType": "Cellular",
         "Content-Type": "application/x-www-form-urlencoded"
     };
-    
+    
     req.body = `refresh_token=${encodeURIComponent(refreshToken)}&tenantid=${STATIC_TENANT_ID_ENCODED}&thirdAuthType=3`;
 
-    const responseBody = await req.loadJSON(); 
-    
-    const cookies = req.response.cookies;
-    if (!cookies || cookies.length === 0) {
-        throw new Error("刷新失败：未在响应中找到 Cookies。");
-    }
+    // --- 详细日志 1: 打印请求 ---
+    console.log("\n--- [LOG: Token 刷新请求详情] ---");
+    console.log("URL:", url);
+    console.log("Headers:", JSON.stringify(req.headers, null, 2));
+    console.log("Body (部分):", req.body.slice(0, 100) + "...");
+    console.log("---------------------------------\n");
 
-    const cookieMap = new Map();
-    for (const cookie of cookies) {
-        cookieMap.set(cookie.name, cookie.value);
-    }
-    
+    // --- 修复：使用 loadString() 和手动解析 ---
+    let responseString;
+    let responseBody;
+    try {
+        // 1. 获取原始字符串响应
+        responseString = await req.loadString(); 
+        
+        // 2. 打印原始响应
+        console.log("\n--- [LOG: Token 刷新原始响应] ---");
+        console.log("Status Code:", req.response.statusCode);
+        console.log("Response Headers:", JSON.stringify(req.response.allHeaderFields, null, 2));
+        console.log("Response Body (Raw):", responseString);
+        console.log("----------------------------------\n");
+
+        // 3. 尝试解析
+        responseBody = JSON.parse(responseString); 
+    } catch (e) {
+        console.error("!!! [CRITICAL] 刷新 Token 失败：无法加载或解析响应。");
+        console.error(e);
+        console.error("Raw Response String:", responseString); // 打印它试图解析的内容
+        throw new Error("刷新 Token 失败：服务器响应无效或非 JSON。");
+    }
+
+    // --- 详细日志 2: 打印 Cookies ---
+    const cookies = req.response.cookies;
+    const cookieMap = new Map();
+    if (cookies && cookies.length > 0) {
+        for (const cookie of cookies) {
+            cookieMap.set(cookie.name, cookie.value);
+        }
+    }
+    console.log("\n--- [LOG: 解析到的 Cookies] ---");
+    // 将 Map 转换为 Object 以便正确打印
+    console.log(JSON.stringify(Object.fromEntries(cookieMap), null, 2));
+    console.log("---------------------------------\n");
+
     const token = cookieMap.get("token");
     const cdnToken = cookieMap.get("cdn_token");
     const hwafSESID = cookieMap.get("HWWAFSESID");
     const hwafSESTIME = cookieMap.get("HWWAFSESTIME");
     const xwlkGray = cookieMap.get("x-wlk-gray");
-    
-    const newRefreshToken = responseBody.refresh_token;
+    
+    const newRefreshToken = responseBody ? responseBody.refresh_token : undefined;
 
+    // --- 详细日志 3: 打印校验前的值 ---
     if (!token || !cdnToken || !hwafSESID || !hwafSESTIME || !newRefreshToken || xwlkGray === undefined) {
-        console.error("Cookie 或 Token 解析不完整:", cookieMap, responseBody);
+        console.error("\n--- [LOG: Cookie/Token 校验失败详情] ---");
+        console.error("token (解析值):", token);
+        console.error("cdnToken (解析值):", cdnToken);
+        console.error("hwafSESID (解析值):", hwafSESID);
+        console.error("hwafSESTIME (解析值):", hwafSESTIME);
+        console.error("xwlkGray (解析值):", xwlkGray);
+        console.error("newRefreshToken (解析值):", newRefreshToken);
+        console.error("----------------------------------------\n");
+        
         throw new Error("Token 刷新失败: " + (responseBody.msg || "无法解析所有必需的 Cookie 或 refresh_token"));
     }
-    
+    
     return { token, cdnToken, hwafSESID, hwafSESTIME, newRefreshToken, xwlkGray };
 }
 
@@ -193,7 +234,7 @@ async function fetchCheckin(auth, dynamicData) {
 
     // 1. 构建完整的 Cookie
     const cookie = `HWWAFSESID=${auth.hwafSESID}; HWWAFSESTIME=${auth.hwafSESTIME}; cdn_token=${auth.cdnToken}; token=${auth.token}; x-wlk-gray=${auth.xwlkGray}`;
-    
+    
     // 2. 设置 Headers (与 all.txt 严格一致)
     req.headers = {
         "lang": "zh",
@@ -211,7 +252,7 @@ async function fetchCheckin(auth, dynamicData) {
         "X-Cloud-Type": "1",
         "businessVersionCode": "703"
     };
-    
+    
     // 3. 设置 Body
     const body = {
         "employeeNumber" : USER_EMPLOYEE_NUMBER, // 已在配置区强制大写
@@ -234,8 +275,8 @@ async function fetchCheckin(auth, dynamicData) {
         "city" : OFFICE_CITY,
         "country" : "中国"
     };
-    
+    
     req.body = JSON.stringify(body);
-    
+    
     return await req.loadJSON();
 }
