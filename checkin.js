@@ -1,6 +1,6 @@
 // Scriptable 脚本 for WeLink 自动打卡
 // 功能: 自动刷新用户Token, 并自动执行打卡。
-// 版本: 2.4 (修正Token数据源 + 强化错误处理)
+// 版本: 2.5 (遵照用户要求，保留原始Token，但强化错误处理)
 //
 // ------------------------------------------------------------------
 // ⚠️ --- (1) 用户配置 (必须更新为您自己的信息!) --- ⚠️
@@ -10,25 +10,25 @@
 const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
 
 // --- 仅需抓取一次的静态/初始配置 ---
-// [!] 已修正此 Token (来自 login.txt 的 response body) 
-const INITIAL_REFRESH_TOKEN = "qWTB3obvCBSlW9HdMkONzQ==9lZfJZYNBixj+6sFORKyfiVM0nHJzR3qaQFic4W9snIfmHTLeAANWIXC36xQL/+/4UQzMeNhe7v6a348NOX3vGjIRaYnn/uo80mEcq/xaZ9V3+MiQW1J5B9s8jhHLFCJgQTaQ2K5qpAJA+J3IC9mSm/5scDLT6l+D2UhdE9sRZAxcoWxpbpM8v0bvdHqVtdRWLeWqzRxqYiSPScNZuCqvDb7XKBq1or94gi/RTqfsR2Z3SrslOCPoe/zTCp6z0FgmCZk1m5KKtU3Tao09C40QYJlIxOLfhgUJtiFibNr+66U";
+// [!] 遵照用户要求，保留此 Token (来自 refresh.txt response body)
+const INITIAL_REFRESH_TOKEN = "N5tToVmneYWPg0JEmiIo2g==e2A27tV2snfijyd8r4zHWXJ9RjS+e3UxWenZdcdH0sAvlU8PEjKSuA7uyIG8zc1YI/ZfjdEaVyoLpRfcPt0qc+ga+an5t1sfqE5lc9/1FFcpFfmPLTCQ8BxEz0JkZdTx3c3SfC6Ht6HtOYeqdu34fh+GuzBhWosJIFxN9Z/mtZUdHv8tGfNv+6ZNMAQC71vjmpym7zpEDQXJEpB9FlUKX65F4OwF9C+Fp6DUUtWrUR++kA+WZunelmQbAoytqJ1qi6D8jWq9UvaEvFWmpqDh1HGK9w9NPRkZh1sVbjJ3dN6T"; //
 
 // 粘贴 refresh.txt Request Body 中 `tenantid=...` 的值 (注意：是完整的URL编码后的值)
-const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; // (来自 refresh.txt) 
+const STATIC_TENANT_ID_ENCODED = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV%2BzVjphWZttUgdT%2BpwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT%2Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV%2BD0BVg%2BAd2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy%2BDl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; // (来自 refresh.txt)
 
 // --- 打卡地理位置/设备信息配置 (来自 all.txt Request Body/Headers) ---
-const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId' [cite: 1, 6]
-const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber' [cite: 1]
-const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent' [cite: 1, 6]
-const USER_IP = "10.245.32.114"; // 'ip' [cite: 1]
-const USER_MEAPIP = "198.18.129.164"; // 'meapip' [cite: 1]
-const OFFICE_LOC_X = "120.798321"; // 'x' 经度 [cite: 1]
-const OFFICE_LOC_Y = "31.275254"; // 'y' 纬度 [cite: 1]
-const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 'location' [cite: 1]
-const OFFICE_PROVINCE = "江苏省"; // 'province' [cite: 1]
-const OFFICE_CITY = "苏州市"; // 'city' [cite: 1]
-const WIFI_MAC = "48:2c:d0:2a:6e:31"; // wifiList[0].wifiMac [cite: 1]
-const WIFI_NAME = "Huawei-Employee"; // wifiList[0].wifiName [cite: 1]
+const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId'
+const USER_EMPLOYEE_NUMBER = "3ZGHIG5PP7YI@AD802282B91"; // 'employeeNumber'
+const USER_AGENT = "WorkPlace/7.50.10 (iPhone; iOS 26.0.1; Scale/3.00)"; // 'User-Agent'
+const USER_IP = "10.245.32.114"; // 'ip'
+const USER_MEAPIP = "198.18.129.164"; // 'meapip'
+const OFFICE_LOC_X = "120.798321"; // 'x' 经度
+const OFFICE_LOC_Y = "31.275254"; // 'y' 纬度
+const OFFICE_LOCATION = "江苏省苏州市虎丘区斜塘街道华为苏州研究所(北门)"; // 'location'
+const OFFICE_PROVINCE = "江苏省"; // 'province'
+const OFFICE_CITY = "苏州市"; // 'city'
+const WIFI_MAC = "48:2c:d0:2a:6e:31"; // wifiList[0].wifiMac
+const WIFI_NAME = "Huawei-Employee"; // wifiList[0].wifiName
 
 // ------------------------------------------------------------------
 // --- (2) 核心函数实现 ---
@@ -120,7 +120,7 @@ async function refreshAuthData(auth) {
     req.method = "POST";
     
     req.headers = {
-        "Content-Type": "application/x-form-urlencoded",
+        "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": USER_AGENT,
         "uuid": USER_DEVICE_ID,
         "lang": "zh"
@@ -143,7 +143,7 @@ async function refreshAuthData(auth) {
             return false;
         }
 
-        // --- [!] 关键修复 (v2.4) ---
+        // --- [!] 关键修复 (保留 v2.4 的逻辑) ---
         // 如果服务器返回了 errorCode，则立即判定为失败
         if (response && response.errorCode) {
             console.error(`❌ Token 刷新失败: ${response.errorMessage} (Code: ${response.errorCode})`);
