@@ -14,8 +14,9 @@ const KEYCHAIN_KEY = "WeLinkAutoCheckinAuthData";
 // 脚本会自动更新这个值。
 const INITIAL_REFRESH_TOKEN = "qWTB3obvCBSlW9HdMkONzQ==9lZfJZYNBixj+6sFORKyfiVM0nHJzR3qaQFic4W9snIfmHTLeAANWIXC36xQL/+/4UQzMeNhe7v6a348NOX3vGjIRaYnn/uo80mEcq/xaZ9V3+MiQW1J5B9s8jhHLFCJgQTaQ2K5qpAJA+J3IC9mSm/5scDLT6l+D2UhdE9sRZAxcoWxpbpM8v0bvdHqVtdRWLeWqzRxqYiSPScNZuCqvDb7XKBq1or94gi/RTqfsR2Z3SrslOCPoe/zTCp6z0FgmCZk1m5KKtU3Tao09C40QYJlIxOLfhgUJtiFibNr+66U"; // [cite: 1]
 
-// 粘贴 refresh.txt Response Body 中 `tenantIdentity` 的值（简单字符串）
-const STATIC_TENANT_ID = "ad802282b91"; // [cite: 1]
+// 粘贴 refresh.txt Request Body 中 `tenantid` 的值（加密字符串）
+// 注意：这是请求体中的 tenantid，不是响应体中的 tenantIdentity
+const STATIC_TENANT_ID = "nT8N5Q2pSqKqWKqFyyBEtN1lT7vfxVejb7QFCBndHLwYDRbkbztWtWsS8oDyUavX9LZ9W/MKKnofbRiF6RSZF4TD61bc8qMZhzXkkm6UXzBXRHQlgYELHcwIPH2jI1Qi3pkj3TQ0F3H7FLaAY8Opzqju3FoBOiz3J5KEBHGsV+zVjphWZttUgdT+pwZ5h97olHOC2dD/MhutMFlULdsQc8kXWys0iFallpJ/9FMPLNXQpuRzcLLOutSs9hcOtnScecp8j2xHebqbpeRomq7hvyifZhhf5BGyTt3i/Hf6SYzV/9uRZGVzpDuIbrZDVnpEHu7MwT+Bv6EC2PG0T8GxrNLreIketmyz31oTVlzgc6kCBMQ4T6gLzXuoReHHaPYg6qcQBi2yYO5mh23OiYYoRGxEpwZ6znrw2tBJd0FNijaV+D0BVg+Ad2BfvSRPWJY1bJTLysGzuiklb2pbFIvlJGJTaQmy+Dl46EK6MWmooviS135GSXcEUm8W5WmluD/l"; // [cite: 32]
 
 // --- 打卡地理位置/设备信息配置 (来自 all.txt Request Body/Headers) ---
 const USER_DEVICE_ID = "5295F639-0CA9-4B42-87CD-B75B3BEF1A77"; // 'uuid' and 'deviceId' [cite: 127]
