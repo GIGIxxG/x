@@ -1,0 +1,133 @@
+/**
+ * 快捷支付扫码小组件 (中尺寸)
+ * * 功能：
+ * - 微信扫一扫
+ * - 支付宝扫一扫
+ * - 支付宝收款
+ * - 支付宝付款
+ * - 微信二维码名片
+ * * 遵从 modern iOS 设计规范。
+ */
+
+exports.main = async function () {
+
+  // --- 配置 ---
+  const wechatColor = "#1AAD19"; // 微信绿
+  const alipayColor = "#00A0E9"; // 支付宝蓝
+  // --- END 配置 ---
+
+  /**
+   * 创建一个统一风格的按钮视图
+   * @param {string} symbol - SF Symbol 图标名称
+   * @param {string} text - 按钮文字
+   * @param {string} color - 图标颜色
+   * @param {string} url - 点击后跳转的 URL Scheme
+   * @returns {object} - 视图配置
+   */
+  function createButton(symbol, text, color, url) {
+    return {
+      type: 'vstack',
+      props: {
+        frame: {
+          maxWidth: Infinity, // 自动填充 hstack 的可用空间
+          height: 72        // 固定高度，保持两行按钮对齐
+        },
+        spacing: 6,         // 图标和文字的间距
+        padding: 8,
+        background: $color("systemGray6"), // iOS 现代设计风格背景
+        cornerRadius: 15,                // iOS 标准圆角
+        link: url,                       // 点击事件
+        alignment: $stack.alignment.center // 内部居中
+      },
+      views: [
+        {
+          // 图标
+          type: 'image',
+          props: {
+            symbol: symbol,
+            font: $font(26), // 图标大小
+            color: $color(color)
+          }
+        },
+        {
+          // 文字
+          type: 'text',
+          props: {
+            text: text,
+            font: $font("caption", "medium"), // 字体样式
+            color: $color("primaryText")      // 自动适配深/浅色模式
+          }
+        }
+      ]
+    };
+  }
+
+  // --- 渲染小组件 ---
+  $widget.setTimeline({
+    // 声明这是一个中等尺寸(medium)的组件
+    // 5个按钮在小尺寸(small)下无法美观地展示
+    type: 'medium',
+    render: {
+      type: 'vstack', // 垂直布局
+      props: {
+        padding: 15,  // 整个组件的内边距
+        spacing: 12   // 两行按钮之间的垂直间距
+      },
+      views: [
+        // --- 第一行 (3个按钮) ---
+        {
+          type: 'hstack', // 水平布局
+          props: {
+            spacing: 12 // 按钮之间的水平间距
+          },
+          views: [
+            // 微信扫一扫
+            createButton(
+              "qrcode.viewfinder",
+              "微信扫一扫",
+              wechatColor,
+              "weixin://scanqrcode"
+            ),
+            // 支付宝扫一扫
+            createButton(
+              "qrcode.viewfinder",
+              "支付宝扫一扫",
+              alipayColor,
+              "alipayqr://platformapi/startapp?saId=10000007"
+            ),
+            // 支付宝收款
+            createButton(
+              "arrow.down.to.line.compact", // SF Symbol
+              "支付宝收款",
+              alipayColor,
+              "alipayqr://platformapi/startapp?saId=20000123"
+            )
+          ]
+        },
+        // --- 第二行 (2个按钮) ---
+        {
+          type: 'hstack', // 水平布局
+          props: {
+            spacing: 12 // 按钮之间的水平间距
+          },
+          views: [
+            // 支付宝付款
+            createButton(
+              "barcode", // SF Symbol
+              "支付宝付款",
+              alipayColor,
+              "alipayqr://platformapi/startapp?appId=20000056"
+            ),
+            // 微信名片
+            createButton(
+              "person.text.rectangle", // SF Symbol
+              "微信名片",
+              wechatColor,
+              "weixin://dl/profile"
+            )
+          ]
+        }
+      ]
+    }
+  });
+};
