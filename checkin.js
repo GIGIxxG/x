@@ -165,10 +165,21 @@ async function refreshAuthData(authData) {
         // 调试：输出响应体信息
         console.log("🔍 调试信息 - 响应体:");
         console.log(`   Response Data: ${JSON.stringify(responseData, null, 2)}`);
+        
+        // 检查响应体中的关键字段
+        console.log("🔍 响应体关键字段检查:");
+        console.log(`   login: ${responseData.login || '未找到'}`);
+        console.log(`   access_token: ${responseData.access_token ? responseData.access_token.substring(0, 20) + '...' : '未找到'}`);
+        console.log(`   refresh_token: ${responseData.refresh_token ? responseData.refresh_token.substring(0, 30) + '...' : '未找到'}`);
+        console.log(`   crypt_token: ${responseData.crypt_token || '未找到'}`);
 
         // 修复Cookie解析逻辑 - 处理多个Set-Cookie头
         let newAccessToken = null;
         const setCookieHeaders = req.response.headers['Set-Cookie'];
+        
+        // 调试：输出所有响应头
+        console.log("🔍 调试信息 - 所有响应头:");
+        console.log(`   Headers: ${JSON.stringify(req.response.headers, null, 2)}`);
         
         if (setCookieHeaders) {
             // Set-Cookie可能是一个数组或字符串
@@ -190,6 +201,18 @@ async function refreshAuthData(authData) {
             }
         } else {
             console.log("❌ 响应中没有 Set-Cookie 头");
+        }
+        
+        // 如果Cookie中没有找到token，尝试从响应体中获取access_token
+        if (!newAccessToken && responseData.access_token) {
+            newAccessToken = responseData.access_token;
+            console.log(`   ✅ 从响应体找到 Access Token: ${newAccessToken.substring(0, 10)}...`);
+        }
+        
+        // 如果还是没有找到，尝试使用crypt_token作为access_token
+        if (!newAccessToken && responseData.crypt_token) {
+            newAccessToken = responseData.crypt_token;
+            console.log(`   ✅ 使用 Crypt Token 作为 Access Token: ${newAccessToken.substring(0, 10)}...`);
         }
             
         const newRefreshToken = responseData.refresh_token; // [cite: 4]
@@ -266,11 +289,28 @@ async function checkin(authData) {
         'appVersion': '7.50.10', // [cite: 127]
         'deviceName': 'iPhone15,3', // [cite: 127]
         'osTarget': '1', // [cite: 127]
+        'lang': 'zh', // [cite: 9]
+        'traceId': 'WK-00EF757D-1FDC-4D50-B087-2A445E2E7403', // [cite: 11]
+        'deviceType': '0', // [cite: 13]
+        'X-Product-Type': '0', // [cite: 15]
+        'appName': 'WeLink', // [cite: 20]
+        'Connection': 'keep-alive', // [cite: 21]
+        'buildCode': '703', // [cite: 22]
+        'Accept-Language': 'en-US;q=1, zh-Hans-US;q=0.9', // [cite: 23]
+        'X-Cloud-Type': '1', // [cite: 24]
+        'businessVersionCode': '703', // [cite: 25]
+        'Accept': '*/*', // [cite: 26]
+        'Accept-Encoding': 'gzip, deflate, br', // [cite: 28]
         // 使用新获取的 access_token 作为 Cookie
         'Cookie': `token=${authData.access_token}`,
-        // 更多 Headers 字段...
     };
     req.body = JSON.stringify(checkinBody);
+
+    // 调试：输出打卡请求信息
+    console.log("🔍 调试信息 - 打卡请求:");
+    console.log(`   URL: ${checkinURL}`);
+    console.log(`   Cookie Token: ${authData.access_token ? authData.access_token.substring(0, 10) + '...' : '未设置'}`);
+    console.log(`   Request Body: ${JSON.stringify(checkinBody, null, 2)}`);
 
     try {
         const response = await req.loadJSON();
