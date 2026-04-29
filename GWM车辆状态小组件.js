@@ -639,26 +639,5 @@ if (config.runsInWidget) {
   Script.complete();
 } else {
   // 非小组件模式 - 显示控制面板
-  // 检查是否有URL参数传入（从小组件点击）
-  const args = process.argv;
-  const cmdArg = args.find(a => a.startsWith("cmd="));
-  
-  if (cmdArg) {
-    const cmd = cmdArg.replace("cmd=", "");
-    const result = await sendRemoteCommand(cmd);
-    
-    const alert = new Alert();
-    if (result && result.code === "000000") {
-      alert.title = "✅ 指令已发送";
-      alert.message = (COMMANDS[cmd] ? COMMANDS[cmd].name : cmd) + " 执行成功";
-    } else {
-      alert.title = "❌ 执行失败";
-      alert.message = result ? result.description : "请检查认证配置";
-    }
-    alert.addDefaultAction("确定");
-    await alert.present();
-  } else {
-    // 直接运行脚本，显示控制面板
-    await showControlPanel();
-  }
+  await showControlPanel();
 }
