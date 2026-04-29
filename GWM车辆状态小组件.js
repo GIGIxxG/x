@@ -9,15 +9,15 @@
 // 从抓包中提取的认证信息（需要替换成你自己的）
 const GWM_CONFIG = {
   vin: "LGWEFUK69NK408870",           // 车辆识别码
-  accessToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJnd21CcmFuZCI6IkNDRzAwMSIsImd3SWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiaWF0IjoxNzczMDc4NDU0LCJiZWFuSWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiZXhwIjoxNzc3NDg2NTQwLCJrZXkiOiJiZWFuX2FwcF91c2VyX2tleSIsImp3dFR5cGUiOjAsImp3c1R5cGUiOjAsImd3bVN0IjoiMiIsInN1bklkIjoiVTE0ODI2NzQ3NDM1NjkwNzUyIiwicm9sZUNvZGUiOiJhZG1pbiIsImNoYW5uZWwiOiI3QTlCODUzRjA0RkQxLTQzMzQtQjJDNS0zODUyNTFEMUMzRVciLCJpc3MiOiJnd20yU2VydmVyIn0.An5htRRLZlm19dqzj8L2u0Hq_sPxf1AfU83q47ULsGuvJewAyrOZwn18bJVcBDPWqtF4YMmXCNtFaiKHL6ggWU9XceKudpuFKQty_E19p2hd7Tc2KNc5F-FDBP7OacuZTNGSx52F_RvOL1e-Ixjaoa0T6n6NBc8ETLPHgJL2yRRjplYMdWz63uhOjGkCOCqViDZT99BLvLkdpeDubfLYEBmCVRFIWqRIcnYUFjT3YgCxDOE63KMbdrPPb9KjVyJavJjPzFWJRtSc1FHv5ROItk4647CektrRgE0yvyHI6Un8-7s_3srAPGxpx14n0TVmtgOfsCeK5Q-TjHbgauMGgej4BILnjWI",
+  accessToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJnd21CcmFuZCI6IkNDRzAwMSIsImd3SWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiaWF0IjoxNzc3MDc4NTU0LCJiZWFuSWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiZXhwIjoxNzc3Njg2NTU0LCJrZXkiOiJiZWFuLWFwcC11c2VyLWtleSIsImp3dF90eXBlIjowLCJqd3RUeXBlIjowLCJnd21TcyI6IjIiLCJzb29JZCI6IlUxNDgyNjc4NDc3NDM1NjkwNzUyIiwicm9sZUNvZGUiOiJhZG1pbiIsImNoYW5uZWwiOiI0QTlBNDUzOTg0MUZEMi00MzM0LUI5QzUzMDgyNTZGMTVFMSIsImlzcyI6Imd3bVNlcnZlciJ9.An5htRRLZlm19dqzj8L2u0Hq_sPxf1AfU83q47ULsGuvJewAyrOZwn18bJVcBDPWqtF4YMmXCNtFaiKHL6ggWU9XceKudpuFKQty_E19p2hd7Tc2KNc5F-FDBP7OacuZTNGSx52F_RvOL1e-Ixjaoa0T6n6NBc8ETLPHgJL2yRRjplYMdWz63uhOjGkCOCqViDZT99BLvLkdpeDubfLYEBmCVRFIWqRIcnYUFjT3YgCxDOE63KMbdrPPb9KjVyJavJjPzFWJRtSc1FHv5ROItk4647CektrRgE0yvyHI6Un8-7s_3srAPGxpx14n0TVmtgOfsCeK5Q-TjHbgauMGgej4BILnjWI",
   userId: "3551434122679631872",       // 用户ID (beanId)
   brand: "10",                         // 品牌代码
   enterpriseId: "CC01",                // 企业ID
   appId: "12345678",                   // 应用ID
   btAuthAppkey: "7863128529",          // 认证密钥
-  btAuthSign: "3bdc313d3a5d653cf0b00753fd26bb079d6cb43864159151766a6ccab0b310d1",
-  btAuthTimestamp: "1777366348468",     // 时间戳
-  btAuthNonce: "h1onireqpcngb6q0"      // 随机数
+  btAuthSign: "e811fb485e6b4330f6e5ba36891eebd1d8b6063d763159278b9077a302cc881a",
+  btAuthTimestamp: "1777366348076",    // 时间戳
+  btAuthNonce: "hukcriysi8o9arsu"      // 随机数
 };
 
 // API网关地址
@@ -671,13 +671,13 @@ async function refreshAndShowStatus() {
     const resultAlert = new Alert();
     resultAlert.title = "📊 车辆状态";
     resultAlert.message = msg;
-    resultAlert.addDefaultAction("确定");
+    resultAlert.addAction("确定");
     await resultAlert.present();
   } else {
     const errorAlert = new Alert();
     errorAlert.title = "❌ 刷新失败";
     errorAlert.message = "无法获取车辆状态，请检查网络配置";
-    errorAlert.addDefaultAction("确定");
+    errorAlert.addAction("确定");
     await errorAlert.present();
   }
 }
@@ -703,9 +703,14 @@ async function executeCommand(cmdType) {
     resultAlert.message = `${COMMANDS[cmdType] ? COMMANDS[cmdType].name : cmdType} 指令已发送`;
   } else {
     resultAlert.title = "❌ 执行失败";
-    resultAlert.message = result ? result.description : "网络错误，请检查配置";
+    let errorMsg = result ? result.description : "网络错误，请检查配置";
+    // 特殊处理签名错误
+    if (result && result.description && result.description.includes("signature")) {
+      errorMsg = "API 签名错误，请重新抓包更新 btAuthSign 和 btAuthNonce";
+    }
+    resultAlert.message = errorMsg;
   }
-  resultAlert.addDefaultAction("确定");
+  resultAlert.addAction("确定");
   await resultAlert.present();
 }
 
