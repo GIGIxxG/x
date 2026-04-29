@@ -6,7 +6,7 @@
 // 从抓包中提取的认证信息（需要替换成你自己的）
 const GWM_CONFIG = {
   vin: "LGWEFUK69NK408870",       // 车辆识别码
-  accessToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJnd21CcmFuZCI6IkNDRzAwMSIsImd3SWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiaWF0IjoxNzc3MDc4NDUwLCJiZWFuSWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiZXhwIjoxNzc3Njg2NTQwLCJrZXkiOiJiZWFuLWFwcC11c2VyLWtleSIsImp3d075lYXBlIjoxLCJqd3RUeXBlIjowLCJnd21ScyI6IjIiLCJzc29JZCI6IlUxNDgyNjc4MTc3NDM5NjkwNzUyIiwicm9sZUNvZGUiOiJhZG1pbiIsImNvYW5tZSI6IjRBQTZBNFUyRkQxLTQzM0UtQjBDNS0zODUyNTFFMUQzRTQiLCJpc3MiOiJnd20gU2VydmVyIn0.An5htRRLZlm19dqzj8L2u0Hq_sPxf1AfU83q47ULsGuvJewAyrOZwn18bJVcBDPWqtF4YMmXCNtFaiKHL6ggWU9XceKudpuFKQty_E19p2hd7Tc2KNc5F-FDBP7OacuZTNGSx52F_RvOL1e-Ixjaoa0T6n6NBc8ETLPHgJL2yRRjplYMdWz63uhOjGkCOCqViDZT99BLvLkdpeDubfLYEBmCVRFIWqRIcnYUFjT3YgCxDOE63KMbdrPPb9KjVyJavJjPzFWJRtSc1FHv5ROItk4647CektrRgE0yvyHI6Un8-7s_3srAPGxpx14n0TVmtgOfsCeK5Q-TjHbgauMGgej4BILnjWI", // JWT访问令牌（从抓包获取）
+  accessToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJnd21CcmFuZCI6IkNDRzAwMSIsImd3SWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiaWF0IjoxNzc3MDc4NDU0LCJiZWFuSWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiZXhwIjoxNzc3NDg2NTQwLCJrZXkiOiJiZWFuLWFwcC11c2VyLWtleSIsImp3dF90eXBlIjowLCJqd3RUeXBlIjowLCJnd21TcyI6IjIiLCJzb29JZCI6IlUxNDgyNjc4NDc3NDM1NjkwNzUyIiwicm9sZUNvZGUiOiJhZG1pbiIsImNoYW5uZWwiOiI0QTlBNDUzRC0xRkQxLTQzM0UtQjBDNS0zODUyNTFFMUQzRSIsImlzcyI6Imd3bSBTZXJ2ZXIifQ.An5htRRLZlm19dqzj8L2u0Hq_sPxf1AfU83q47ULsGuvJewAyrOZwn18bJVcBDPWqtF4YMmXCNtFaiKHL6ggWU9XceKudpuFKQty_E19p2hd7Tc2KNc5F-FDBP7OacuZTNGSx52F_RvOL1e-Ixjaoa0T6n6NBc8ETLPHgJL2yRRjplYMdWz63uhOjGkCOCqViDZT99BLvLkdpeDubfLYEBmCVRFIWqRIcnYUFjT3YgCxDOE63KMbdrPPb9KjVyJavJjPzFWJRtSc1FHv5ROItk4647CektrRgE0yvyHI6Un8-7s_3srAPGxpx14n0TVmtgOfsCeK5Q-TjHbgauMGgej4BILnjWI", // JWT访问令牌（从抓包获取）
   userId: "3551438122679631872",   // 用户ID（beanId）
   brand: "10",                     // 品牌代码
   enterpriseId: "CC01",            // 企业ID
@@ -320,13 +320,13 @@ async function createMediumWidget() {
   
   const timeText = footerStack.addText("更新: " + formatTime(updateTime));
   timeText.font = Font.systemFont(9);
-  timeText.textColor = Color.systemGray();
+  timeText.textColor = Color.gray();
   
   footerStack.addSpacer();
   
   const tapHint = footerStack.addText("点击打开控制面板 ▸");
   tapHint.font = Font.systemFont(9);
-  tapHint.textColor = Color.systemGray();
+  tapHint.textColor = Color.gray();
   
   // 点击打开控制面板脚本
   widget.url = "scriptable:///run/GWM%E8%BD%A6%E8%BE%86%E6%8E%A7%E5%88%B6%E9%9D%A2%E6%9D%BF";
@@ -370,7 +370,7 @@ async function createLargeWidget() {
   
   const vinText = headerStack.addText(GWM_CONFIG.vin.slice(-6));
   vinText.font = Font.systemFont(10);
-  vinText.textColor = Color.systemGray();
+  vinText.textColor = Color.gray();
   
   widget.addSpacer(10);
   
@@ -392,7 +392,7 @@ async function createLargeWidget() {
   
   const rangeLabel = leftArea.addText("续航 " + (status.batteryPreMileage || "--"));
   rangeLabel.font = Font.systemFont(12);
-  rangeLabel.textColor = Color.systemGray();
+  rangeLabel.textColor = Color.gray();
   
   leftArea.addSpacer();
   
@@ -419,7 +419,7 @@ async function createLargeWidget() {
   // === 快捷控制区 ===
   const controlLabel = widget.addText("快捷控制");
   controlLabel.font = Font.boldSystemFont(12);
-  controlLabel.textColor = Color.systemGray();
+  controlLabel.textColor = Color.gray();
   widget.addSpacer(4);
   
   const ctrlGrid = widget.addStack();
@@ -440,13 +440,13 @@ async function createLargeWidget() {
   
   const timeText = footerStack.addText("更新: " + formatTime(updateTime));
   timeText.font = Font.systemFont(9);
-  timeText.textColor = Color.systemGray();
+  timeText.textColor = Color.gray();
   
   footerStack.addSpacer();
   
   const tapHint = footerStack.addText("更多控制 ▸");
   tapHint.font = Font.systemFont(9);
-  tapHint.textColor = Color.systemGray();
+  tapHint.textColor = Color.gray();
   
   widget.url = "scriptable:///run/GWM%E8%BD%A6%E8%BE%86%E6%8E%A7%E5%88%B6%E9%9D%A2%E6%9D%BF";
   
@@ -457,19 +457,19 @@ async function createLargeWidget() {
 function createErrorWidget(widget, message) {
   const errorText = widget.addText("❌ " + message);
   errorText.font = Font.systemFont(14);
-  errorText.textColor = Color.systemRed();
+  errorText.textColor = Color.red();
   
   widget.addSpacer(4);
   
   const helpText = widget.addText("请在脚本中配置认证信息");
   helpText.font = Font.systemFont(11);
-  helpText.textColor = Color.systemGray();
+  helpText.textColor = Color.gray();
   
   widget.addSpacer(4);
   
   const detailText = widget.addText("需要: accessToken, vin, btAuthSign");
   detailText.font = Font.systemFont(10);
-  detailText.textColor = Color.systemGray();
+  detailText.textColor = Color.gray();
   
   return widget;
 }
@@ -485,7 +485,7 @@ function addInfoRow(stack, icon, label, value) {
   
   const labelText = row.addText(label + ":");
   labelText.font = Font.systemFont(11);
-  labelText.textColor = Color.systemGray();
+  labelText.textColor = Color.gray();
   
   const valueText = row.addText(String(value || "--"));
   valueText.font = Font.boldSystemFont(11);
@@ -507,7 +507,7 @@ function addControlButton(stack, icon, label, command) {
   
   const labelText = btn.addText(label);
   labelText.font = Font.systemFont(8);
-  labelText.textColor = Color.systemGray();
+  labelText.textColor = Color.gray();
   labelText.centerAlignText();
   
   // 点击执行控制命令（通过URL Scheme传递参数）
@@ -610,11 +610,6 @@ async function showControlPanel() {
     }
   } else {
     // 执行控制命令
-    const loadingAlert = new Alert();
-    loadingAlert.title = "⏳ 执行中";
-    loadingAlert.message = `正在执行: ${COMMANDS[selectedCmd] ? COMMANDS[selectedCmd].name : selectedCmd}`;
-    loadingAlert.addCancelAction("取消");
-    
     const result = await sendRemoteCommand(selectedCmd);
     
     const resultAlert = new Alert();
@@ -667,107 +662,3 @@ if (config.runsInWidget) {
     await showControlPanel();
   }
 }
-
-// ========== 使用说明 ==========
-/*
-╔══════════════════════════════════════════════════════════╗
-║            长城汽车 Scriptable 小组件 使用说明            ║
-╠══════════════════════════════════════════════════════════╣
-║                                                          ║
-║  【文件列表】                                             ║
-║  1. GWM车辆状态小组件.js - 状态查看+快捷控制（本文件）     ║
-║  2. GWM车辆控制面板.js   - 独立控制面板（需另外创建）      ║
-║                                                          ║
-║  【配置步骤】                                             ║
-║  1. 使用抓包工具抓取长城汽车App的API请求                   ║
-║  2. 找到任意 gw-app-gateway 请求                          ║
-║  3. 复制以下认证信息到配置区域:                            ║
-║     - vin: URL中的vin参数                                 ║
-║     - accessToken: 请求头中的accessToken                  ║
-║     - userId/beanId: 请求头中的beanId                     ║
-║     - btAuthSign: 请求头中的bt-auth-sign                  ║
-║     - btAuthTimestamp: 请求头中的bt-auth-timestamp         ║
-║     - btAuthNonce: 请求头中的bt-auth-nonce                ║
-║  4. 保存脚本，先在Scriptable中直接运行测试                 ║
-║  5. 测试通过后添加iOS桌面小组件                            ║
-║                                                          ║
-║  【注意事项】                                             ║
-║  - accessToken有效期约7天，过期需重新抓包获取              ║
-║  - bt-auth-sign签名可能需要每次请求时重新计算              ║
-║  - 如果签名验证失败，需要同时更新sign/timestamp/nonce      ║
-║  - 建议使用5分钟缓存避免频繁请求                           ║
-║                                                          ║
-║  【API接口汇总】                                          ║
-║  查看状态:                                                ║
-║    GET /api/v3.0/vehicle/getLastStatus?vin={VIN}          ║
-║    GET /api/v3.0/vehicle/function/item?vin={VIN}          ║
-║                                                          ║
-║  车辆控制:                                                ║
-║    POST /api/v3.0/vehicle/remote-ctrl/config/query        ║
-║    GET  /api/v3.0/vehicle/remote-ctrl/subscribe/{VIN}     ║
-║                                                          ║
-║  【控制指令】                                             ║
-║  AIR_CONDITIONER_START  - 开启空调                        ║
-║  AIR_CONDITIONER_STOP   - 关闭空调                        ║
-║  DOOR_LOCK              - 锁车                            ║
-║  DOOR_UNLOCK            - 解锁                            ║
-║  WINDOW_CLOSE           - 关窗                            ║
-║  FIND_CAR_FLASH         - 闪灯寻车                        ║
-║  FIND_CAR_HORN          - 鸣笛寻车                        ║
-║  SEAT_HEATING_START     - 座椅加热                        ║
-║  STEERING_WHEEL_HEATING - 方向盘加热                      ║
-║  DEFROST_FRONT_START    - 前除霜                          ║
-║  DEFROST_BACK_START     - 后除霜                          ║
-║  BACK_DOOR_OPEN         - 开后背门                        ║
-║  BACK_DOOR_CLOSE        - 关后背门                        ║
-║  CABIN_CLEAN_START      - 座舱清洁                        ║
-║                                                          ║
-║  【车辆状态数据结构】                                     ║
-║  vehicleStatusInfo:                                       ║
-║  ├── powerBatteryPercent  - 电池电量                      ║
-║  ├── powerBatteryDisplayVal - 电量显示值                  ║
-║  ├── batteryPreMileage    - 剩余续航里程                  ║
-║  ├── mileage              - 总里程                        ║
-║  ├── inCarTemperature     - 车内温度                      ║
-║  ├── airConditionSts      - 空调状态 (0=关,1=开)          ║
-║  ├── steerWheelHeatdSts   - 方向盘加热状态                ║
-║  ├── door                                                  ║
-║  │   ├── mainDrveDoorLockSts - 主驾车锁状态               ║
-║  │   ├── mainDrveDoorSts     - 主驾门状态                 ║
-║  │   ├── viceDoorSts         - 副驾门状态                 ║
-║  │   ├── lbDoorSts           - 左后门状态                 ║
-║  │   ├── rbDoorSts           - 右后门状态                 ║
-║  │   ├── backDoorSts         - 后门状态                   ║
-║  │   └── tailgateOpenUpSts   - 尾门状态                   ║
-║  ├── windows                                               ║
-║  │   ├── lfWinPosnSts   - 左前窗位置状态                  ║
-║  │   ├── rfWinPosnSts   - 右前窗位置状态                  ║
-║  │   ├── lbWinPosnSts   - 左后窗位置状态                  ║
-║  │   ├── rbWinPosnSts   - 右后窗位置状态                  ║
-║  │   └── skyLightSts    - 天窗状态                        ║
-║  ├── tirePress                                             ║
-║  │   ├── lfTirePressVal - 左前轮胎压                      ║
-║  │   ├── rfTirePressVal - 右前轮胎压                      ║
-║  │   ├── lbTirePressVal - 左后轮胎压                      ║
-║  │   └── rbTirePressVal - 右后轮胎压                      ║
-║  ├── tireTemp                                              ║
-║  │   ├── lfTireTempVal  - 左前轮胎温                      ║
-║  │   ├── rfTireTempVal  - 右前轮胎温                      ║
-║  │   ├── lbTireTempVal  - 左后轮胎温                      ║
-║  │   └── rbTireTempVal  - 右后轮胎温                      ║
-║  ├── seat                                                  ║
-║  │   ├── mainDriverSeatHeatSts - 主驾加热状态             ║
-║  │   ├── mainDriverSeatVentSts - 主驾通风状态             ║
-║  │   ├── viceSeatHeatSts       - 副驾加热状态             ║
-║  │   ├── viceSeatVentSts       - 副驾通风状态             ║
-║  │   ├── lbSeatHeatSts         - 左后加热状态             ║
-║  │   └── rbSeatHeatSts         - 右后加热状态             ║
-║  ├── charge                                                ║
-║  │   ├── chargeSoc           - 充电SOC                    ║
-║  │   └── chargingGunStatus   - 充电枪状态                 ║
-║  ├── healthDegree         - 健康度                        ║
-║  ├── wirelessLevel        - 无线信号等级                   ║
-║  ├── longitude / latitude - 经纬度位置                    ║
-║  └── battPackVolt         - 电池包电压                    ║
-║                                                          ║
-╚══════════════════════════
