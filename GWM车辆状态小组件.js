@@ -6,15 +6,15 @@
 // 从抓包中提取的认证信息（需要替换成你自己的）
 const GWM_CONFIG = {
   vin: "LGWEFUK69NK408870",       // 车辆识别码
-  accessToken: "YOUR_ACCESS_TOKEN", // JWT访问令牌（从抓包获取）
+  accessToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJnd21CcmFuZCI6IkNDRzAwMSIsImd3SWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiaWF0IjoxNzc3MDc4NDUwLCJiZWFuSWQiOiIzNTUxNDM0MTIyNjc5NjMxODcyIiwiZXhwIjoxNzc3Njg2NTQwLCJrZXkiOiJiZWFuLWFwcC11c2VyLWtleSIsImp3d075lYXBlIjoxLCJqd3RUeXBlIjowLCJnd21ScyI6IjIiLCJzc29JZCI6IlUxNDgyNjc4MTc3NDM5NjkwNzUyIiwicm9sZUNvZGUiOiJhZG1pbiIsImNvYW5tZSI6IjRBQTZBNFUyRkQxLTQzM0UtQjBDNS0zODUyNTFFMUQzRTQiLCJpc3MiOiJnd20gU2VydmVyIn0.An5htRRLZlm19dqzj8L2u0Hq_sPxf1AfU83q47ULsGuvJewAyrOZwn18bJVcBDPWqtF4YMmXCNtFaiKHL6ggWU9XceKudpuFKQty_E19p2hd7Tc2KNc5F-FDBP7OacuZTNGSx52F_RvOL1e-Ixjaoa0T6n6NBc8ETLPHgJL2yRRjplYMdWz63uhOjGkCOCqViDZT99BLvLkdpeDubfLYEBmCVRFIWqRIcnYUFjT3YgCxDOE63KMbdrPPb9KjVyJavJjPzFWJRtSc1FHv5ROItk4647CektrRgE0yvyHI6Un8-7s_3srAPGxpx14n0TVmtgOfsCeK5Q-TjHbgauMGgej4BILnjWI", // JWT访问令牌（从抓包获取）
   userId: "3551438122679631872",   // 用户ID（beanId）
   brand: "10",                     // 品牌代码
   enterpriseId: "CC01",            // 企业ID
   appId: "12345678",               // 应用ID
   btAuthAppkey: "7863128529",      // 认证密钥
-  btAuthSign: "YOUR_BT_AUTH_SIGN", // 签名（从抓包获取）
-  btAuthTimestamp: "0",            // 时间戳（从抓包获取）
-  btAuthNonce: "YOUR_NONCE"        // 随机字符串（从抓包获取）
+  btAuthSign: "3bdc313d3a5d653cf0b00753fd26bb079d6cb43864159151766a6ccab0b310d1", // 签名（从抓包获取）
+  btAuthTimestamp: "1777366348468", // 时间戳（从抓包获取）
+  btAuthNonce: "h1onireqpcngb6q0"  // 随机字符串（从抓包获取）
 };
 
 // ========== API配置 ==========
