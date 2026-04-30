@@ -61,7 +61,7 @@ function GetGatewayToken() {
     
     if (k === "accesstoken") {
       accessToken = headers[key];
-      console.log("🔑 找到 accessToken: " + accessToken.substring(0, 50) + "...");
+      console.log("🔑 找到 accessToken: " + accessToken);
     }
     else if (k === "beanid") {
       beanId = headers[key];
@@ -69,7 +69,7 @@ function GetGatewayToken() {
     }
     else if (k === "bt-auth-sign") {
       btAuthSign = headers[key];
-      console.log("🔑 找到 bt-auth-sign: " + btAuthSign.substring(0, 32) + "...");
+      console.log("🔑 找到 bt-auth-sign: " + btAuthSign);
     }
     else if (k === "bt-auth-timestamp") {
       btAuthTimestamp = headers[key];
@@ -101,7 +101,17 @@ function GetGatewayToken() {
     const updateTimeStr = new Date(updateTime).toLocaleString('zh-CN');
     
     console.log("✅ 网关 Token 抓取成功！更新时间: " + updateTimeStr);
-    $notify("长城汽车", "✅ 网关 Token 已更新", "时间: " + updateTimeStr);
+    
+    // 输出完整信息到通知
+    const notifyMessage = 
+      "accessToken: " + accessToken + "\n" +
+      "beanId: " + beanId + "\n" +
+      "bt-auth-sign: " + btAuthSign + "\n" +
+      "bt-auth-timestamp: " + btAuthTimestamp + "\n" +
+      "bt-auth-nonce: " + btAuthNonce + "\n" +
+      "更新时间: " + updateTimeStr;
+    
+    $notify("✅ 网关 Token 已更新", "时间: " + updateTimeStr, notifyMessage);
   } else {
     console.log("⚠️ 未能获取完整的认证信息");
     console.log("  accessToken: " + (accessToken ? "✓" : "✗"));
@@ -129,7 +139,7 @@ function ShowSavedToken() {
   console.log("=".repeat(60));
   
   if (accessToken) {
-    console.log("✅ accessToken: " + accessToken.substring(0, 50) + "...");
+    console.log("✅ accessToken: " + accessToken);
   } else {
     console.log("❌ accessToken: 未保存");
   }
@@ -141,7 +151,7 @@ function ShowSavedToken() {
   }
   
   if (btAuthSign) {
-    console.log("✅ bt-auth-sign: " + btAuthSign.substring(0, 32) + "...");
+    console.log("✅ bt-auth-sign: " + btAuthSign);
   } else {
     console.log("❌ bt-auth-sign: 未保存");
   }
