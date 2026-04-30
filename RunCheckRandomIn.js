@@ -64,12 +64,21 @@ async function runTargetScript(scriptName) {
     }
 
     console.log("开始执行脚本: " + scriptName)
-    const evalResult = eval(code)
-    // 如果脚本返回 Promise，则等待它
-    if (evalResult && typeof evalResult.then === "function") {
-      await evalResult
+    
+    // 用 new Function 包装执行，避免 eval 的作用域问题
+    try {
+      const asyncScript = new Function("return (async () => {\n" + code + "\n})()")
+      const evalResult = await asyncScript()
+      console.log("脚本 " + scriptName + " 执行完成")
+    } catch (e) {
+      // 如果包装后失败，尝试直接 eval
+      console.log("包装执行失败，尝试直接 eval: " + e)
+      const evalResult = eval(code)
+      if (evalResult && typeof evalResult.then === "function") {
+        await evalResult
+      }
+      console.log("脚本 " + scriptName + " 执行完成")
     }
-    console.log("脚本 " + scriptName + " 执行完成")
   } catch (e) {
     console.log("读取或执行脚本失败: " + e)
     throw e
