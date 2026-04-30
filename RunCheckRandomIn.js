@@ -22,13 +22,7 @@ const TEXT_COLOR_LIGHT = "#16213e"
 // ========== 运行目标脚本 ==========
 async function runTargetScript(scriptName) {
   try {
-    const mod = importModule(scriptName)
-    // 如果模块导出的是异步函数，则 await 它
-    if (typeof mod === "function") {
-      await mod()
-    } else if (mod && typeof mod.main === "function") {
-      await mod.main()
-    }
+    await Script.run(scriptName)
     console.log("脚本 " + scriptName + " 执行完成")
   } catch (e) {
     console.log("脚本运行出错: " + e)
