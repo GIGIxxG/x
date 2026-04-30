@@ -159,7 +159,7 @@ async function createWidget() {
   // 左侧：Logo 文字
   const logoText = topStack.addText("⚡ AlQuantumult")
   logoText.font = Font.boldSystemFont(12)
-  logoText.textColor = Color.hex(COLORS.primary)
+  logoText.textColor = new Color(COLORS.primary)
   logoText.shadowColor = Color.black()
   logoText.shadowOffset = new Point(0, 0)
   logoText.shadowRadius = 3
@@ -199,7 +199,7 @@ async function createWidget() {
   
   const labelText = labelStack.addText("⚡ LAST RUN")
   labelText.font = Font.systemFont(10)
-  labelText.textColor = Color.hex(COLORS.primary)
+  labelText.textColor = new Color(COLORS.primary)
   labelText.shadowColor = Color.black()
   labelText.shadowOffset = new Point(0, 0)
   labelText.shadowRadius = 2
@@ -213,7 +213,7 @@ async function createWidget() {
   
   const timeText = timeStack.addText(displayTime)
   timeText.font = Font.monospacedSystemFont(16, "bold")
-  timeText.textColor = Color.hex(COLORS.text)
+  timeText.textColor = new Color(COLORS.text)
   timeText.shadowColor = Color.black()
   timeText.shadowOffset = new Point(0, 1)
   timeText.shadowRadius = 3
@@ -226,7 +226,7 @@ async function createWidget() {
     
     const hintText = hintStack.addText("TAP TO CHECK-IN")
     hintText.font = Font.systemFont(10)
-    hintText.textColor = Color.hex(COLORS.accent)
+    hintText.textColor = new Color(COLORS.accent)
     hintText.shadowColor = Color.black()
     hintText.shadowOffset = new Point(0, 0)
     hintText.shadowRadius = 2
