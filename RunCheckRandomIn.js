@@ -128,16 +128,22 @@ Script.complete()
 async function createWidget() {
   const widget = new ListWidget()
 
-  // 完全透明背景
-  widget.backgroundColor = new Color("rgba(0, 0, 0, 0)")
-  widget.setPadding(8, 8, 8, 8)
+  // 完全透明背景 - 方案1：不设置背景色让系统处理
+  widget.setPadding(0, 0, 0, 0)
 
-  // 显示图片（在透明背景上居中）
+  // 创建居中容器
+  const centerStack = widget.addStack()
+  centerStack.layoutVertically()
+  centerStack.centerAlignContent()
+  centerStack.size = new Size(0, 0)
+
+  // 显示图片（居中）
   try {
     const req = new Request(WIDGET_IMAGE_URL)
     const img = await req.loadImage()
-    widget.addImage(img)
-    widget.addSpacer()
+    const imgView = centerStack.addImage(img)
+    imgView.imageOpacity = 1
+    centerStack.addSpacer()
   } catch (e) {
     console.log("加载图片失败: " + e)
   }
@@ -145,10 +151,10 @@ async function createWidget() {
   // 显示上次打卡时间
   const lastCheckin = getLastCheckinTime()
   if (lastCheckin) {
-    const checkinText = widget.addText(lastCheckin)
+    const checkinText = centerStack.addText(lastCheckin)
     checkinText.font = Font.systemFont(12)
     checkinText.textColor = new Color(TEXT_COLOR)
-    checkinText.textOpacity = 0.9
+    checkinText.centerAlignText()
   }
 
   return widget
