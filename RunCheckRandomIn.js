@@ -10,7 +10,7 @@
 
 // ========== 配置区域 ==========
 const TARGET_SCRIPT = "checkin"
-const WIDGET_IMAGE_URL = "https://raw.githubusercontent.com/alalalex-m/AlQuantumult/refs/heads/main/Pics/IMG_3542.jpeg?token=TTOAX"
+const WIDGET_IMAGE_URL = "https://alquantumult.pages.dev/alalalex-m/AlQuantumult/main/Pics/IMG_3542.jpeg?token=TTOAX"
 const BG_COLOR = "#1a1a2e"
 const TEXT_COLOR = "#4ecca3"
 const LAST_CHECKIN_KEY = "lastCheckinTime"
@@ -147,7 +147,7 @@ async function createWidget() {
   if (lastCheckin) {
     widget.addSpacer()
     const checkinText = widget.addText("上次打卡: " + lastCheckin)
-    checkinText.font = Font.caption()
+    checkinText.font = Font.smallSystemFont(12)
     checkinText.textColor = new Color(TEXT_COLOR)
     checkinText.textOpacity = 0.9
   }
