@@ -6,6 +6,8 @@
  * 2. 在 iOS 桌面添加 Scriptable 小组件
  * 3. 选择此脚本作为小组件内容
  * 4. 点击小组件即可运行 checkrandomin 脚本
+ * 
+ * 兼容性：内置 Surge/Quantumult X 环境变量 polyfill ($prefs, $notify, $done 等)
  */
 
 // ========== 配置区域 ==========
@@ -19,27 +21,217 @@ const ACCENT_COLOR = "#e94560"        // 强调色
 const TEXT_COLOR_DARK = "#ffffff"      // 深色模式文字颜色
 const TEXT_COLOR_LIGHT = "#16213e"     // 浅色模式文字颜色
 
+// ========== Surge/QX 环境变量 Polyfill ==========
+function setupPolyfills() {
+  // $prefs - 键值存储 (模拟 Surge 的偏好设置)
+  if (typeof $prefs === 'undefined') {
+    globalThis.$prefs = {
+      get: (key) => {
+        try {
+          return Keychain.get(key)
+        } catch (e) {
+          return null
+        }
+      },
+      set: (key, value) => {
+        try {
+          Keychain.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value))
+        } catch (e) {
+          console.log(`$prefs.set error: ${e}`)
+        }
+      },
+      remove: (key) => {
+        try {
+          Keychain.remove(key)
+        } catch (e) {
+          console.log(`$prefs.remove error: ${e}`)
+        }
+      }
+    }
+  }
+
+  // $notify - 发送通知
+  if (typeof $notify === 'undefined') {
+    globalThis.$notify = (title, subtitle, body) => {
+      console.log(`[通知] ${title}: ${subtitle || ''} - ${body || ''}`)
+      const notification = new Notification()
+      notification.title = title || ""
+      notification.body = subtitle ? `${subtitle}\n${body || ""}` : (body || "")
+      notification.schedule()
+    }
+  }
+
+  // $done - 完成回调
+  if (typeof $done === 'undefined') {
+    globalThis.$done = (result) => {
+      console.log("[完成] $done 被调用")
+      if (result) {
+        console.log(`$done result: ${JSON.stringify(result)}`)
+      }
+    }
+  }
+
+  // $httpClient - HTTP 请求
+  if (typeof $httpClient === 'undefined') {
+    globalThis.$httpClient = {
+      get: (request, callback) => {
+        _httpRequest("GET", request, callback)
+      },
+      post: (request, callback) => {
+        _httpRequest("POST", request, callback)
+      },
+      put: (request, callback) => {
+        _httpRequest("PUT", request, callback)
+      },
+      delete: (request, callback) => {
+        _httpRequest("DELETE", request, callback)
+      }
+    }
+  }
+
+  // $task - 异步任务 (兼容 Surge fetch)
+  if (typeof $task === 'undefined') {
+    globalThis.$task = {
+      fetch: (request) => {
+        return new Promise((resolve, reject) => {
+          _httpRequest(request.method || "GET", request, (error, response, data) => {
+            if (error) {
+              reject(error)
+            } else {
+              resolve({
+                statusCode: response.status,
+                headers: response.headers,
+                body: data
+              })
+            }
+          })
+        })
+      }
+    }
+  }
+
+  // $persistentStore - 持久化存储
+  if (typeof $persistentStore === 'undefined') {
+    globalThis.$persistentStore = {
+      read: (key) => {
+        try {
+          return Keychain.get(key)
+        } catch (e) {
+          return null
+        }
+      },
+      write: (key, value) => {
+        try {
+          Keychain.set(key, value)
+          return true
+        } catch (e) {
+          return false
+        }
+      }
+    }
+  }
+
+  // $env - 环境信息
+  if (typeof $env === 'undefined') {
+    globalThis.$env = {
+      appName: "Scriptable",
+      appVersion: Device.systemVersion,
+      platform: "ios"
+    }
+  }
+
+  // $script - 脚本信息
+  if (typeof $script === 'undefined') {
+    globalThis.$script = {
+      name: TARGET_SCRIPT,
+      startTime: new Date().getTime()
+    }
+  }
+
+  // $argument - 参数
+  if (typeof $argument === 'undefined') {
+    globalThis.$argument = ""
+  }
+
+  // $surge - Surge 版本信息
+  if (typeof $surge === 'undefined') {
+    globalThis.$surge = {
+      build: "0",
+      version: "0"
+    }
+  }
+
+  // console.write 某些脚本可能使用
+  if (typeof console.write === 'undefined') {
+    console.write = (msg) => console.log(msg)
+  }
+}
+
+// ========== HTTP 请求封装 ==========
+function _httpRequest(method, request, callback) {
+  // 兼容两种参数格式: (url, callback) 或 (options, callback)
+  let url, headers, body
+  
+  if (typeof request === 'string') {
+    url = request
+    headers = {}
+    body = null
+  } else {
+    url = request.url
+    headers = request.headers || {}
+    body = request.body || null
+  }
+
+  const req = new Request(url)
+  req.method = method
+  req.headers = headers
+  if (body) {
+    req.body = typeof body === 'string' ? body : JSON.stringify(body)
+  }
+
+  req.loadString()
+    .then((data) => {
+      callback(null, {
+        status: req.response.statusCode,
+        headers: req.response.headers
+      }, data)
+    })
+    .catch((error) => {
+      callback(error, null, null)
+    })
+}
+
 // ========== 小组件入口 ==========
 const widget = await createWidget()
 
-// 判断运行环境：如果是小组件则显示，否则预览
 if (config.runsInWidget) {
+  // 小组件模式：设置 URL 触发自身运行（非 widget 模式）
+  widget.url = `scriptable:///run?scriptName=${encodeURIComponent(Script.name())}`
   Script.setWidget(widget)
 } else {
-  // 在 Scriptable app 中直接运行时，弹出提示并运行目标脚本
-  const alert = new Alert()
-  alert.title = "运行目标脚本"
-  alert.message = `即将运行脚本: ${TARGET_SCRIPT}`
-  alert.addAction("运行")
-  alert.addCancelAction("取消")
+  // 非小组件模式（点击小组件后触发或手动运行）
+  // 安装 polyfills
+  setupPolyfills()
   
-  const result = await alert.present()
-  if (result === 0) {
-    // 用户点击"运行"，打开目标脚本
-    runTargetScript()
-  } else {
-    // 预览小组件
-    widget.presentMedium()
+  // 运行目标脚本
+  try {
+    console.log(`正在运行脚本: ${TARGET_SCRIPT}`)
+    await Script.run(TARGET_SCRIPT)
+    console.log(`脚本 ${TARGET_SCRIPT} 运行完成`)
+    
+    // 发送完成通知
+    const notification = new Notification()
+    notification.title = "✅ 签到完成"
+    notification.body = `${TARGET_SCRIPT} 已成功运行`
+    notification.schedule()
+  } catch (e) {
+    console.log(`脚本运行出错: ${e}`)
+    
+    // 发送错误通知
+    const notification = new Notification()
+    notification.title = "❌ 签到失败"
+    notification.body = `错误: ${String(e)}`
+    notification.schedule()
   }
 }
 
@@ -49,15 +241,12 @@ Script.complete()
 async function createWidget() {
   const widget = new ListWidget()
   
-  // 设置点击跳转 - 使用 Scriptable URL Scheme 运行目标脚本
-  widget.url = `scriptable:///run?scriptName=${encodeURIComponent(TARGET_SCRIPT)}`
-  
   // 判断深色/浅色模式
   const isDark = Device.isUsingDarkAppearance()
   const bgColor = isDark ? BG_COLOR_DARK : BG_COLOR_LIGHT
   const textColor = isDark ? TEXT_COLOR_DARK : TEXT_COLOR_LIGHT
   
-  // 设置背景
+  // 设置背景渐变
   const gradient = new LinearGradient()
   gradient.colors = [
     new Color(bgColor),
@@ -104,7 +293,7 @@ async function createWidget() {
   
   widget.addSpacer(8)
   
-  // 目标脚本名称
+  // 目标脚本名称标签
   const scriptStack = widget.addStack()
   scriptStack.layoutHorizontally()
   scriptStack.centerAlignContent()
@@ -137,10 +326,4 @@ async function createWidget() {
   timeText.textOpacity = 0.5
   
   return widget
-}
-
-// ========== 运行目标脚本 ==========
-function runTargetScript() {
-  const url = `scriptable:///run?scriptName=${encodeURIComponent(TARGET_SCRIPT)}`
-  Safari.openInApp(url)
 }
