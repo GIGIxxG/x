@@ -203,17 +203,17 @@ function _httpRequest(method, request, callback) {
 
 // ========== 读取目标脚本内容 ==========
 function findScriptPath(scriptName) {
-  const fm = FileManager.local()
+  const fmLocal = FileManager.local()
+  const fmCloud = FileManager.iCloud()
   
-  // 可能的脚本目录
-  const scriptDirs = [
-    fm.joinPath(fm.documentsDirectory(), scriptName + ".js"),
-    fm.joinPath(fm.cloudDirectory(), scriptName + ".js"),
-    fm.joinPath(fm.libraryDirectory(), scriptName + ".js")
+  // 可能的脚本路径（documentsDirectory 是属性不是方法）
+  const scriptPaths = [
+    fmLocal.joinPath(fmLocal.documentsDirectory, scriptName + ".js"),
+    fmCloud.joinPath(fmCloud.documentsDirectory, scriptName + ".js")
   ]
   
-  for (const path of scriptDirs) {
-    if (fm.fileExists(path)) {
+  for (const path of scriptPaths) {
+    if (fmLocal.fileExists(path)) {
       return path
     }
   }
@@ -221,23 +221,31 @@ function findScriptPath(scriptName) {
 }
 
 async function runTargetScript(scriptName) {
-  const fm = FileManager.local()
   const scriptPath = findScriptPath(scriptName)
   
   if (!scriptPath) {
-    throw new Error(`找不到脚本: ${scriptName}.js\n已搜索目录:\n- ${fm.documentsDirectory()}\n- ${fm.cloudDirectory()}`)
+    const fmLocal = FileManager.local()
+    const fmCloud = FileManager.iCloud()
+    throw new Error(
+      `找不到脚本: ${scriptName}.js\n已搜索目录:\n- ${fmLocal.documentsDirectory}\n- ${fmCloud.documentsDirectory}`
+    )
   }
   
   console.log(`找到脚本: ${scriptPath}`)
+  const fm = FileManager.local()
   const scriptContent = fm.readString(scriptPath)
   
   if (!scriptContent) {
     throw new Error(`脚本内容为空: ${scriptPath}`)
   }
   
-  // 在当前上下文中 eval 执行，使 polyfill 生效
+  // 在当前上下文中执行，使 polyfill 生效
+  // 用 async Function 包装以支持目标脚本中的 await
   console.log(`开始执行脚本: ${scriptName}`)
-  await eval(scriptContent)
+  const asyncFn = new Function(
+    'return (async () => {\n' + scriptContent + '\n})()'
+  )
+  await asyncFn()
   console.log(`脚本 ${scriptName} 执行完成`)
 }
 
