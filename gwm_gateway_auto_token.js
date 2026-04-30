@@ -5,7 +5,7 @@
 
 [rewrite_local]
 # 匹配网关 API 的车辆相关接口
-^https:\/\/gw-app-gateway\.gwmapp-h\.com\/app-api\/api\/v3\.0\/(vehicle|user)\/.* url script-request-body https://raw.githubusercontent.com/你的用户名/Quantumult-X/refs/heads/main/rewrite/gwm_gateway_auto_token.js
+^https:\/\/gw-app-gateway\.gwmapp-h\.com\/app-api\/api\/v3\.0\/(vehicle|user)\/.* url script-request-body https://raw.githubusercontent.com/GIGIxxG/x/refs/heads/main/gwm_gateway_auto_token.js
 
 [mitm]
 hostname = *.gwmapp-h.com
