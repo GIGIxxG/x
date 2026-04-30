@@ -10,14 +10,9 @@
 
 // ========== 配置区域 ==========
 const TARGET_SCRIPT = "checkin"
-const WIDGET_TITLE = "随机签到"
-const WIDGET_ICON = "🎲"
-const WIDGET_SUBTITLE = "点击运行签到"
-const BG_COLOR_DARK = "#1a1a2e"
-const BG_COLOR_LIGHT = "#f0f0f5"
-const ACCENT_COLOR = "#e94560"
-const TEXT_COLOR_DARK = "#ffffff"
-const TEXT_COLOR_LIGHT = "#16213e"
+const WIDGET_IMAGE_URL = "https://raw.githubusercontent.com/alalalex-m/AlQuantumult/refs/heads/main/Pics/IMG_3542.jpeg?token=TTOAX"
+const BG_COLOR = "#1a1a2e"
+const TEXT_COLOR = "#4ecca3"
 const LAST_CHECKIN_KEY = "lastCheckinTime"
 
 // ========== 运行目标脚本 ==========
@@ -25,7 +20,6 @@ function findScriptPath(scriptName) {
   const fmLocal = FileManager.local()
   const fmCloud = FileManager.iCloud()
 
-  // 获取文档目录（可能是函数也可能是属性）
   const localDir = typeof fmLocal.documentsDirectory === "function" 
     ? fmLocal.documentsDirectory() 
     : fmLocal.documentsDirectory
@@ -33,7 +27,6 @@ function findScriptPath(scriptName) {
     ? fmCloud.documentsDirectory() 
     : fmCloud.documentsDirectory
 
-  // 尝试不同的路径拼接方式
   const tries = [
     fmLocal.joinPath ? fmLocal.joinPath(localDir, scriptName + ".js") : localDir + "/" + scriptName + ".js",
     fmCloud.joinPath ? fmCloud.joinPath(cloudDir, scriptName + ".js") : cloudDir + "/" + scriptName + ".js",
@@ -66,13 +59,11 @@ async function runTargetScript(scriptName) {
 
     console.log("开始执行脚本: " + scriptName)
     
-    // 用 new Function 包装执行，避免 eval 的作用域问题
     try {
       const asyncScript = new Function("return (async () => {\n" + code + "\n})()")
       const evalResult = await asyncScript()
       console.log("脚本 " + scriptName + " 执行完成")
     } catch (e) {
-      // 如果包装后失败，尝试直接 eval
       console.log("包装执行失败，尝试直接 eval: " + e)
       const evalResult = eval(code)
       if (evalResult && typeof evalResult.then === "function") {
@@ -81,7 +72,6 @@ async function runTargetScript(scriptName) {
       console.log("脚本 " + scriptName + " 执行完成")
     }
 
-    // 记录打卡时间
     saveLastCheckinTime()
   } catch (e) {
     console.log("读取或执行脚本失败: " + e)
@@ -138,83 +128,28 @@ Script.complete()
 // ========== 创建小组件 ==========
 async function createWidget() {
   const widget = new ListWidget()
-  const isDark = Device.isUsingDarkAppearance()
-  const bgColor = isDark ? BG_COLOR_DARK : BG_COLOR_LIGHT
-  const textColor = isDark ? TEXT_COLOR_DARK : TEXT_COLOR_LIGHT
 
-  // 背景渐变
-  const gradient = new LinearGradient()
-  gradient.colors = [new Color(bgColor), new Color(isDark ? "#16213e" : "#e8e8f0")]
-  gradient.locations = [0, 1]
-  widget.backgroundGradient = gradient
-  widget.setPadding(16, 16, 16, 16)
+  // 背景
+  widget.backgroundColor = new Color(BG_COLOR)
+  widget.setPadding(12, 12, 12, 12)
 
-  // 图标行
-  const iconRow = widget.addStack()
-  iconRow.layoutHorizontally()
-  iconRow.centerAlignContent()
-
-  const iconText = iconRow.addText(WIDGET_ICON)
-  iconText.font = Font.largeTitle()
-
-  iconRow.addSpacer(8)
-
-  const titleText = iconRow.addText(WIDGET_TITLE)
-  titleText.font = Font.headline()
-  titleText.textColor = new Color(isDark ? ACCENT_COLOR : "#c23152")
-
-  iconRow.addSpacer()
-
-  const statusDot = iconRow.addText("●")
-  statusDot.font = Font.caption2()
-  statusDot.textColor = new Color("#4ecca3")
-
-  widget.addSpacer(8)
-
-  const subtitleText = widget.addText(WIDGET_SUBTITLE)
-  subtitleText.font = Font.body()
-  subtitleText.textColor = new Color(textColor)
-  subtitleText.textOpacity = 0.7
-
-  widget.addSpacer(8)
-
-  // 脚本名称标签
-  const scriptStack = widget.addStack()
-  scriptStack.layoutHorizontally()
-  scriptStack.centerAlignContent()
-  scriptStack.size = new Size(0, 28)
-  scriptStack.cornerRadius = 14
-  scriptStack.backgroundColor = new Color(isDark ? "#0f3460" : "#d8d8e8")
-  scriptStack.setPadding(4, 12, 4, 12)
-
-  const scriptIcon = scriptStack.addText("▶")
-  scriptIcon.font = Font.caption1()
-  scriptIcon.textColor = new Color(ACCENT_COLOR)
-
-  scriptStack.addSpacer(4)
-
-  const scriptName = scriptStack.addText(TARGET_SCRIPT)
-  scriptName.font = Font.caption1()
-  scriptName.textColor = new Color(textColor)
-  scriptName.textOpacity = 0.8
-
-  widget.addSpacer()
-
-  // 显示当前时间
-  const now = new Date().toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" })
-  const timeText = widget.addText(now)
-  timeText.font = Font.caption2()
-  timeText.textColor = new Color(textColor)
-  timeText.textOpacity = 0.5
+  // 加载并显示图片
+  try {
+    const req = new Request(WIDGET_IMAGE_URL)
+    const img = await req.loadImage()
+    widget.backgroundImage = img
+  } catch (e) {
+    console.log("加载图片失败: " + e)
+  }
 
   // 显示上次打卡时间
   const lastCheckin = getLastCheckinTime()
   if (lastCheckin) {
-    widget.addSpacer(2)
+    widget.addSpacer()
     const checkinText = widget.addText("上次打卡: " + lastCheckin)
-    checkinText.font = Font.caption2()
-    checkinText.textColor = new Color("#4ecca3")
-    checkinText.textOpacity = 0.8
+    checkinText.font = Font.caption()
+    checkinText.textColor = new Color(TEXT_COLOR)
+    checkinText.textOpacity = 0.9
   }
 
   return widget
