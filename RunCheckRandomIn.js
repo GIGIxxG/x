@@ -20,14 +20,42 @@ const TEXT_COLOR_DARK = "#ffffff"
 const TEXT_COLOR_LIGHT = "#16213e"
 
 // ========== 运行目标脚本 ==========
-async function runTargetScript(scriptName) {
-  try {
-    await Script.run(scriptName)
-    console.log("脚本 " + scriptName + " 执行完成")
-  } catch (e) {
-    console.log("脚本运行出错: " + e)
-    throw e
+function findScriptPath(scriptName) {
+  const fm = FileManager.local()
+  // 优先查找本地目录，再查找 iCloud 目录
+  const dirs = [
+    fm.documentsDirectory,
+    FileManager.iCloud().documentsDirectory
+  ]
+  for (const dir of dirs) {
+    const path = fm.joinPath(dir, scriptName + ".js")
+    if (fm.fileExists(path)) {
+      return path
+    }
   }
+  return null
+}
+
+async function runTargetScript(scriptName) {
+  const path = findScriptPath(scriptName)
+
+  if (!path) {
+    throw new Error("找不到脚本: " + scriptName + ".js")
+  }
+
+  const fm = FileManager.local()
+  const code = fm.readString(path)
+  if (!code) {
+    throw new Error("脚本内容为空: " + path)
+  }
+
+  console.log("开始执行脚本: " + scriptName)
+  const result = eval(code)
+  // 如果脚本返回 Promise，则等待它
+  if (result && typeof result.then === "function") {
+    await result
+  }
+  console.log("脚本 " + scriptName + " 执行完成")
 }
 
 // ========== 小组件入口 ==========
