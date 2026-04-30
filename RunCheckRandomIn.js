@@ -1,15 +1,15 @@
 /**
- * Scriptable 小组件 - 点击运行 checkrandomin 脚本
+ * Scriptable 小组件 - 点击运行 checkin 脚本
  * 
  * 使用方法：
  * 1. 将此脚本放入 Scriptable 的脚本目录
  * 2. 在 iOS 桌面添加 Scriptable 小组件
  * 3. 选择此脚本作为小组件内容
- * 4. 点击小组件即可运行 checkrandomin 脚本
+ * 4. 点击小组件即可运行 checkin 脚本
  */
 
 // ========== 配置区域 ==========
-const TARGET_SCRIPT = "checkrandomin"
+const TARGET_SCRIPT = "checkin"
 const WIDGET_TITLE = "随机签到"
 const WIDGET_ICON = "🎲"
 const WIDGET_SUBTITLE = "点击运行签到"
@@ -21,39 +21,39 @@ const TEXT_COLOR_LIGHT = "#16213e"
 
 // ========== 运行目标脚本 ==========
 function findScriptPath(scriptName) {
-  const fm = FileManager.local()
-  // 优先查找本地目录，再查找 iCloud 目录
-  const dirs = [
-    fm.documentsDirectory,
-    FileManager.iCloud().documentsDirectory
-  ]
-  for (const dir of dirs) {
-    const path = fm.joinPath(dir, scriptName + ".js")
-    if (fm.fileExists(path)) {
-      return path
-    }
+  const fmLocal = FileManager.local()
+  const fmCloud = FileManager.iCloud()
+
+  const localPath = fmLocal.joinPath(fmLocal.documentsDirectory, scriptName + ".js")
+  if (fmLocal.fileExists(localPath)) {
+    return { path: localPath, fm: fmLocal }
   }
+
+  const cloudPath = fmCloud.joinPath(fmCloud.documentsDirectory, scriptName + ".js")
+  if (fmLocal.fileExists(cloudPath)) {
+    return { path: cloudPath, fm: fmCloud }
+  }
+
   return null
 }
 
 async function runTargetScript(scriptName) {
-  const path = findScriptPath(scriptName)
+  const result = findScriptPath(scriptName)
 
-  if (!path) {
+  if (!result) {
     throw new Error("找不到脚本: " + scriptName + ".js")
   }
 
-  const fm = FileManager.local()
-  const code = fm.readString(path)
+  const code = result.fm.readString(result.path)
   if (!code) {
-    throw new Error("脚本内容为空: " + path)
+    throw new Error("脚本内容为空: " + result.path)
   }
 
   console.log("开始执行脚本: " + scriptName)
-  const result = eval(code)
+  const evalResult = eval(code)
   // 如果脚本返回 Promise，则等待它
-  if (result && typeof result.then === "function") {
-    await result
+  if (evalResult && typeof evalResult.then === "function") {
+    await evalResult
   }
   console.log("脚本 " + scriptName + " 执行完成")
 }
