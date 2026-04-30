@@ -201,6 +201,46 @@ function _httpRequest(method, request, callback) {
     })
 }
 
+// ========== 读取目标脚本内容 ==========
+function findScriptPath(scriptName) {
+  const fm = FileManager.local()
+  
+  // 可能的脚本目录
+  const scriptDirs = [
+    fm.joinPath(fm.documentsDirectory(), scriptName + ".js"),
+    fm.joinPath(fm.cloudDirectory(), scriptName + ".js"),
+    fm.joinPath(fm.libraryDirectory(), scriptName + ".js")
+  ]
+  
+  for (const path of scriptDirs) {
+    if (fm.fileExists(path)) {
+      return path
+    }
+  }
+  return null
+}
+
+async function runTargetScript(scriptName) {
+  const fm = FileManager.local()
+  const scriptPath = findScriptPath(scriptName)
+  
+  if (!scriptPath) {
+    throw new Error(`找不到脚本: ${scriptName}.js\n已搜索目录:\n- ${fm.documentsDirectory()}\n- ${fm.cloudDirectory()}`)
+  }
+  
+  console.log(`找到脚本: ${scriptPath}`)
+  const scriptContent = fm.readString(scriptPath)
+  
+  if (!scriptContent) {
+    throw new Error(`脚本内容为空: ${scriptPath}`)
+  }
+  
+  // 在当前上下文中 eval 执行，使 polyfill 生效
+  console.log(`开始执行脚本: ${scriptName}`)
+  await eval(scriptContent)
+  console.log(`脚本 ${scriptName} 执行完成`)
+}
+
 // ========== 小组件入口 ==========
 const widget = await createWidget()
 
@@ -215,9 +255,7 @@ if (config.runsInWidget) {
   
   // 运行目标脚本
   try {
-    console.log(`正在运行脚本: ${TARGET_SCRIPT}`)
-    await Script.run(TARGET_SCRIPT)
-    console.log(`脚本 ${TARGET_SCRIPT} 运行完成`)
+    await runTargetScript(TARGET_SCRIPT)
     
     // 发送完成通知
     const notification = new Notification()
