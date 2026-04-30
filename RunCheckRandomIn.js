@@ -11,8 +11,7 @@
 // ========== 配置区域 ==========
 const TARGET_SCRIPT = "checkin"
 const WIDGET_IMAGE_URL = "https://alquantumult.pages.dev/alalalex-m/AlQuantumult/main/Pics/IMG_3542.jpeg?token=TTOAX"
-const BG_COLOR = "#1a1a2e"
-const TEXT_COLOR = "#4ecca3"
+const TEXT_COLOR = "#DC143C"
 const LAST_CHECKIN_KEY = "lastCheckinTime"
 
 // ========== 运行目标脚本 ==========
@@ -129,15 +128,16 @@ Script.complete()
 async function createWidget() {
   const widget = new ListWidget()
 
-  // 背景
-  widget.backgroundColor = new Color(BG_COLOR)
-  widget.setPadding(12, 12, 12, 12)
+  // 完全透明背景
+  widget.backgroundColor = new Color("rgba(0, 0, 0, 0)")
+  widget.setPadding(8, 8, 8, 8)
 
-  // 加载并显示图片
+  // 显示图片（在透明背景上居中）
   try {
     const req = new Request(WIDGET_IMAGE_URL)
     const img = await req.loadImage()
-    widget.backgroundImage = img
+    widget.addImage(img)
+    widget.addSpacer()
   } catch (e) {
     console.log("加载图片失败: " + e)
   }
@@ -145,9 +145,8 @@ async function createWidget() {
   // 显示上次打卡时间
   const lastCheckin = getLastCheckinTime()
   if (lastCheckin) {
-    widget.addSpacer()
-    const checkinText = widget.addText("上次打卡: " + lastCheckin)
-    checkinText.font = Font.smallSystemFont(12)
+    const checkinText = widget.addText(lastCheckin)
+    checkinText.font = Font.systemFont(12)
     checkinText.textColor = new Color(TEXT_COLOR)
     checkinText.textOpacity = 0.9
   }
