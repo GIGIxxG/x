@@ -18,6 +18,7 @@ const BG_COLOR_LIGHT = "#f0f0f5"
 const ACCENT_COLOR = "#e94560"
 const TEXT_COLOR_DARK = "#ffffff"
 const TEXT_COLOR_LIGHT = "#16213e"
+const LAST_CHECKIN_KEY = "lastCheckinTime"
 
 // ========== 运行目标脚本 ==========
 function findScriptPath(scriptName) {
@@ -79,10 +80,43 @@ async function runTargetScript(scriptName) {
       }
       console.log("脚本 " + scriptName + " 执行完成")
     }
+
+    // 记录打卡时间
+    saveLastCheckinTime()
   } catch (e) {
     console.log("读取或执行脚本失败: " + e)
     throw e
   }
+}
+
+// 保存打卡时间
+function saveLastCheckinTime() {
+  try {
+    const now = new Date().toISOString()
+    Keychain.set(LAST_CHECKIN_KEY, now)
+  } catch (e) {
+    console.log("保存打卡时间失败: " + e)
+  }
+}
+
+// 获取上次打卡时间
+function getLastCheckinTime() {
+  try {
+    const timeStr = Keychain.get(LAST_CHECKIN_KEY)
+    if (timeStr) {
+      const date = new Date(timeStr)
+      return date.toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    }
+  } catch (e) {
+    console.log("读取打卡时间失败: " + e)
+  }
+  return null
 }
 
 // ========== 小组件入口 ==========
@@ -94,15 +128,8 @@ if (config.runsInWidget) {
 } else {
   try {
     await runTargetScript(TARGET_SCRIPT)
-    const n = new Notification()
-    n.title = "✅ 签到完成"
-    n.body = TARGET_SCRIPT + " 已成功运行"
-    n.schedule()
   } catch (e) {
-    const n = new Notification()
-    n.title = "❌ 签到失败"
-    n.body = "错误: " + String(e)
-    n.schedule()
+    console.log("执行失败: " + String(e))
   }
 }
 
@@ -173,10 +200,22 @@ async function createWidget() {
 
   widget.addSpacer()
 
-  const timeText = widget.addText(new Date().toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" }))
+  // 显示当前时间
+  const now = new Date().toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" })
+  const timeText = widget.addText(now)
   timeText.font = Font.caption2()
   timeText.textColor = new Color(textColor)
   timeText.textOpacity = 0.5
+
+  // 显示上次打卡时间
+  const lastCheckin = getLastCheckinTime()
+  if (lastCheckin) {
+    widget.addSpacer(2)
+    const checkinText = widget.addText("上次打卡: " + lastCheckin)
+    checkinText.font = Font.caption2()
+    checkinText.textColor = new Color("#4ecca3")
+    checkinText.textOpacity = 0.8
+  }
 
   return widget
 }
