@@ -6,8 +6,6 @@
  * 2. 在 iOS 桌面添加 Scriptable 小组件
  * 3. 选择此脚本作为小组件内容
  * 4. 点击小组件即可运行 checkrandomin 脚本
- * 
- * 兼容性：内置 Surge/Quantumult X 环境变量 polyfill ($prefs, $notify, $done 等)
  */
 
 // ========== 配置区域 ==========
@@ -21,192 +19,21 @@ const ACCENT_COLOR = "#e94560"
 const TEXT_COLOR_DARK = "#ffffff"
 const TEXT_COLOR_LIGHT = "#16213e"
 
-// ========== Surge/QX 环境变量 Polyfill ==========
-function setupPolyfills() {
-  // $prefs - 兼容 Surge 偏好设置 (支持 get/set/valueForKey/setValueForKey 等)
-  if (typeof $prefs === "undefined") {
-    globalThis.$prefs = {
-      get(key) {
-        try { return Keychain.get(String(key)) } catch(e) { return null }
-      },
-      set(key, value) {
-        try { Keychain.set(String(key), typeof value === "object" ? JSON.stringify(value) : String(value)) } catch(e) { console.log("$prefs.set error: " + e) }
-      },
-      remove(key) {
-        try { Keychain.remove(String(key)) } catch(e) {}
-      },
-      valueForKey(key) {
-        try { return Keychain.get(String(key)) } catch(e) { return null }
-      },
-      setValueForKey(value, key) {
-        try { Keychain.set(String(key), typeof value === "object" ? JSON.stringify(value) : String(value)) } catch(e) { console.log("$prefs.setValueForKey error: " + e) }
-      },
-      removeValueForKey(key) {
-        try { Keychain.remove(String(key)) } catch(e) {}
-      }
-    }
-  }
-
-  // $notify - 发送通知
-  if (typeof $notify === "undefined") {
-    globalThis.$notify = (title, subtitle, body) => {
-      console.log("[通知] " + title + ": " + (subtitle || "") + " - " + (body || ""))
-      const n = new Notification()
-      n.title = title || ""
-      n.body = subtitle ? subtitle + "\n" + (body || "") : (body || "")
-      n.schedule()
-    }
-  }
-
-  // $done - 完成回调
-  if (typeof $done === "undefined") {
-    globalThis.$done = (result) => {
-      console.log("[$done] 被调用")
-      if (result) console.log("$done result: " + JSON.stringify(result))
-    }
-  }
-
-  // $httpClient - HTTP 请求
-  if (typeof $httpClient === "undefined") {
-    globalThis.$httpClient = {
-      get(request, callback) { _httpRequest("GET", request, callback) },
-      post(request, callback) { _httpRequest("POST", request, callback) },
-      put(request, callback) { _httpRequest("PUT", request, callback) },
-      delete(request, callback) { _httpRequest("DELETE", request, callback) },
-      head(request, callback) { _httpRequest("HEAD", request, callback) }
-    }
-  }
-
-  // $task - 异步任务
-  if (typeof $task === "undefined") {
-    globalThis.$task = {
-      fetch(request) {
-        return new Promise((resolve, reject) => {
-          _httpRequest(request.method || "GET", request, (error, response, data) => {
-            if (error) { reject(error) }
-            else {
-              resolve({
-                statusCode: response.status,
-                headers: response.headers,
-                body: data
-              })
-            }
-          })
-        })
-      }
-    }
-  }
-
-  // $persistentStore - 持久化存储
-  if (typeof $persistentStore === "undefined") {
-    globalThis.$persistentStore = {
-      read(key) { try { return Keychain.get(String(key)) } catch(e) { return null } },
-      write(value, key) {
-        try { Keychain.set(String(key), String(value)); return true } catch(e) { return false }
-      }
-    }
-  }
-
-  // $env
-  if (typeof $env === "undefined") {
-    globalThis.$env = { appName: "Scriptable", appVersion: Device.systemVersion, platform: "ios" }
-  }
-
-  // $script
-  if (typeof $script === "undefined") {
-    globalThis.$script = { name: TARGET_SCRIPT, startTime: new Date().getTime() }
-  }
-
-  // $argument
-  if (typeof $argument === "undefined") {
-    globalThis.$argument = ""
-  }
-
-  // $surge
-  if (typeof $surge === "undefined") {
-    globalThis.$surge = { build: "0", version: "0" }
-  }
-
-  // $utils (某些脚本使用)
-  if (typeof $utils === "undefined") {
-    globalThis.$utils = {
-      notify: globalThis.$notify
-    }
-  }
-}
-
-// ========== HTTP 请求封装 ==========
-function _httpRequest(method, request, callback) {
-  let url, headers, body
-
-  if (typeof request === "string") {
-    url = request
-    headers = {}
-    body = null
-  } else {
-    url = request.url
-    headers = request.headers || {}
-    body = request.body || null
-  }
-
-  const req = new Request(url)
-  req.method = method
-  req.headers = headers
-  if (body) {
-    req.body = typeof body === "string" ? body : JSON.stringify(body)
-  }
-
-  req.loadString()
-    .then((data) => {
-      callback(null, { status: req.response.statusCode, headers: req.response.headers }, data)
-    })
-    .catch((error) => {
-      callback(error, null, null)
-    })
-}
-
-// ========== 读取并执行目标脚本 ==========
-function findScriptPath(scriptName) {
-  const fmLocal = FileManager.local()
-  const fmCloud = FileManager.iCloud()
-
-  const scriptPaths = [
-    fmLocal.joinPath(fmLocal.documentsDirectory, scriptName + ".js"),
-    fmCloud.joinPath(fmCloud.documentsDirectory, scriptName + ".js")
-  ]
-
-  for (const path of scriptPaths) {
-    if (fmLocal.fileExists(path)) {
-      return path
-    }
-  }
-  return null
-}
-
+// ========== 运行目标脚本 ==========
 async function runTargetScript(scriptName) {
-  const scriptPath = findScriptPath(scriptName)
-
-  if (!scriptPath) {
-    const fmLocal = FileManager.local()
-    const fmCloud = FileManager.iCloud()
-    throw new Error(
-      "找不到脚本: " + scriptName + ".js\n已搜索:\n- " + fmLocal.documentsDirectory + "\n- " + fmCloud.documentsDirectory
-    )
+  try {
+    const mod = importModule(scriptName)
+    // 如果模块导出的是异步函数，则 await 它
+    if (typeof mod === "function") {
+      await mod()
+    } else if (mod && typeof mod.main === "function") {
+      await mod.main()
+    }
+    console.log("脚本 " + scriptName + " 执行完成")
+  } catch (e) {
+    console.log("脚本运行出错: " + e)
+    throw e
   }
-
-  console.log("找到脚本: " + scriptPath)
-  const fm = FileManager.local()
-  const scriptContent = fm.readString(scriptPath)
-
-  if (!scriptContent) {
-    throw new Error("脚本内容为空: " + scriptPath)
-  }
-
-  // 用 async 函数包装执行，polyfill 已挂载到 globalThis 可被访问
-  console.log("开始执行脚本: " + scriptName)
-  const asyncFn = new Function("return (async () => {\n" + scriptContent + "\n})()")
-  await asyncFn()
-  console.log("脚本 " + scriptName + " 执行完成")
 }
 
 // ========== 小组件入口 ==========
@@ -216,8 +43,6 @@ if (config.runsInWidget) {
   widget.url = "scriptable:///run?scriptName=" + encodeURIComponent(Script.name())
   Script.setWidget(widget)
 } else {
-  setupPolyfills()
-
   try {
     await runTargetScript(TARGET_SCRIPT)
     const n = new Notification()
@@ -225,7 +50,6 @@ if (config.runsInWidget) {
     n.body = TARGET_SCRIPT + " 已成功运行"
     n.schedule()
   } catch (e) {
-    console.log("脚本运行出错: " + e)
     const n = new Notification()
     n.title = "❌ 签到失败"
     n.body = "错误: " + String(e)
