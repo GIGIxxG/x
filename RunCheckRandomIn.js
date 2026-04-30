@@ -24,16 +24,29 @@ function findScriptPath(scriptName) {
   const fmLocal = FileManager.local()
   const fmCloud = FileManager.iCloud()
 
-  const localPath = fmLocal.joinPath(fmLocal.documentsDirectory, scriptName + ".js")
-  if (fmLocal.fileExists(localPath)) {
-    return { path: localPath, fm: fmLocal }
-  }
+  // 获取文档目录（可能是函数也可能是属性）
+  const localDir = typeof fmLocal.documentsDirectory === "function" 
+    ? fmLocal.documentsDirectory() 
+    : fmLocal.documentsDirectory
+  const cloudDir = typeof fmCloud.documentsDirectory === "function" 
+    ? fmCloud.documentsDirectory() 
+    : fmCloud.documentsDirectory
 
-  const cloudPath = fmCloud.joinPath(fmCloud.documentsDirectory, scriptName + ".js")
-  if (fmLocal.fileExists(cloudPath)) {
-    return { path: cloudPath, fm: fmCloud }
-  }
+  // 尝试不同的路径拼接方式
+  const tries = [
+    fmLocal.joinPath ? fmLocal.joinPath(localDir, scriptName + ".js") : localDir + "/" + scriptName + ".js",
+    fmCloud.joinPath ? fmCloud.joinPath(cloudDir, scriptName + ".js") : cloudDir + "/" + scriptName + ".js",
+    localDir + "/" + scriptName + ".js",
+    cloudDir + "/" + scriptName + ".js"
+  ]
 
+  for (const path of tries) {
+    try {
+      if (fmLocal.fileExists(path)) {
+        return { path: path, fm: fmLocal }
+      }
+    } catch (e) {}
+  }
   return null
 }
 
@@ -44,18 +57,23 @@ async function runTargetScript(scriptName) {
     throw new Error("找不到脚本: " + scriptName + ".js")
   }
 
-  const code = result.fm.readString(result.path)
-  if (!code) {
-    throw new Error("脚本内容为空: " + result.path)
-  }
+  try {
+    const code = result.fm.readString(result.path)
+    if (!code) {
+      throw new Error("脚本内容为空: " + result.path)
+    }
 
-  console.log("开始执行脚本: " + scriptName)
-  const evalResult = eval(code)
-  // 如果脚本返回 Promise，则等待它
-  if (evalResult && typeof evalResult.then === "function") {
-    await evalResult
+    console.log("开始执行脚本: " + scriptName)
+    const evalResult = eval(code)
+    // 如果脚本返回 Promise，则等待它
+    if (evalResult && typeof evalResult.then === "function") {
+      await evalResult
+    }
+    console.log("脚本 " + scriptName + " 执行完成")
+  } catch (e) {
+    console.log("读取或执行脚本失败: " + e)
+    throw e
   }
-  console.log("脚本 " + scriptName + " 执行完成")
 }
 
 // ========== 小组件入口 ==========
