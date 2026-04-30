@@ -1,0 +1,102 @@
+// AlQuantumult Check-in Widget - 小尺寸科技版
+// 直接从网络加载图片 + 最后运行时间 + 点击运行 checkin
+
+let widget = new ListWidget()
+
+// ==================== 背景图片直接从链接加载 ====================
+let imageUrl = "https://alquantumult.pages.dev/alalalex-m/AlQuantumult/main/Pics/IMG_3542.jpeg?token=TTOAX"
+
+let bgImage = await loadImage(imageUrl)
+
+// 添加深色科技感遮罩
+let gradient = new LinearGradient()
+gradient.colors = [
+    new Color("#000000", 0.15),   // 上方较透明
+    new Color("#000000", 0.75)    // 下方较暗，便于显示文字
+]
+gradient.locations = [0, 1]
+widget.backgroundGradient = gradient
+
+// 设置背景图片（会和渐变叠加，效果更好）
+if (bgImage) {
+    widget.backgroundImage = bgImage
+}
+
+// ==================== 主要内容 ====================
+let stack = widget.addStack()
+stack.layoutVertically()
+stack.setPadding(14, 16, 14, 16)
+stack.spacing = 10
+
+// 顶部标题（赛博风格）
+let titleStack = stack.addStack()
+titleStack.layoutHorizontally()
+titleStack.centerAlignContent()
+
+let title = titleStack.addText("ALQUANTUMULT")
+title.font = Font.boldSystemFont(15)
+title.textColor = new Color("#00f5ff")
+title.shadowColor = new Color("#00f5ff", 0.8)
+title.shadowRadius = 10
+
+// 分隔
+stack.addSpacer(8)
+
+// 最后运行时间
+let timeStack = stack.addStack()
+timeStack.layoutVertically()
+timeStack.spacing = 4
+
+let lastLabel = timeStack.addText("LAST RUN")
+lastLabel.font = Font.mediumSystemFont(10)
+lastLabel.textColor = new Color("#888888")
+
+let lastTime = timeStack.addText(getLastRunTime())
+lastTime.font = Font.semiboldSystemFont(17)
+lastTime.textColor = Color.white()
+lastTime.shadowColor = new Color("#ffffff", 0.5)
+lastTime.shadowRadius = 3
+
+// 底部提示（点击提示）
+stack.addSpacer(12)
+
+let hint = stack.addText("TAP TO CHECK-IN")
+hint.font = Font.mediumSystemFont(12)
+hint.textColor = new Color("#00ff9d")
+hint.centerAlignText()
+
+// ==================== 点击动作 ====================
+widget.url = "scriptable:///run?scriptName=checkin"   // ← 修改为你的签到脚本名称
+
+// ==================== 辅助函数 ====================
+async function loadImage(url) {
+    try {
+        let req = new Request(url)
+        let img = await req.loadImage()
+        return img
+    } catch (e) {
+        console.log("图片加载失败，使用纯黑背景")
+        return null
+    }
+}
+
+function getLastRunTime() {
+    const key = "AlQuantumult_LastRun"
+    let timestamp = Keychain.get(key)
+    
+    if (!timestamp) return "Never"
+
+    let date = new Date(parseInt(timestamp))
+    let df = new DateFormatter()
+    df.dateFormat = "yyyy.MM.dd  HH:mm"
+    return df.string(date)
+}
+
+// ==================== 调试与显示 ====================
+if (!config.runsInWidget) {
+    // 测试时显示小组件预览
+    await widget.presentSmall()
+}
+
+Script.setWidget(widget)
+Script.complete()
